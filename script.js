@@ -15,3 +15,22 @@ desplazarArriba.addEventListener("click", () => {
     behavior: "smooth",
   });
 });
+
+// menú móvil (hamburguesa)
+const menuToggle = document.querySelector("#menu-toggle");
+const enlaces = document.querySelector("#Enlaces");
+
+if (menuToggle && enlaces) {
+  menuToggle.addEventListener("click", () => {
+    const abierto = enlaces.classList.toggle("activo");
+    menuToggle.setAttribute("aria-expanded", abierto);
+  });
+
+  // cierra el menú al elegir un enlace (útil en móvil)
+  enlaces.querySelectorAll("a").forEach((link) => {
+    link.addEventListener("click", () => {
+      enlaces.classList.remove("activo");
+      menuToggle.setAttribute("aria-expanded", "false");
+    });
+  });
+}

@@ -8,7 +8,7 @@
     <link rel="icon" href="Ima/favicon2.ico">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="Estilos/Estilos.css">
-    
+
 </head>
 <body>
     <header>
@@ -16,16 +16,18 @@
             <div class="logo">
                 <img src="Ima/4Mesa de trabajo 1@4x.png" alt="" width="50%" height="50%">
             </div>
-            <div class="Enlaces">
+            <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menú" aria-expanded="false">&#9776;</button>
+            <ul class="Enlaces" id="Enlaces">
               <li><a href="index.html">Inicio</a></li>
               <li><a href="MesaDeTrabajo/acercade.html">Acerca de</a></li>
               <li><a href="#contacto">Contacto</a></li>
               <li><a href="MesaDeTrabajo/PortafolioExtendido.html">Portafolio</a></li>
-        </div>
+            </ul>
         </nav>
+    </header>
 
     <section class="LandingPage">
-        <div class="Redes"> 
+        <div class="Redes">
             <a href="https://github.com/marmat1997" target="_blank"><i class="fa fa-github" aria-hidden="true"></i></a>
           <!-- <i class="fa fa-facebook-square" aria-hidden="true"></i> -->
           <!-- <a href="https://www.Twitter.com/" target="_blank"><i class="fa fa-twitter-square" aria-hidden="true"></i></a> -->
@@ -35,10 +37,10 @@
             <div class="contenedor-textos">
                 <h1>Marvin Matias</h1>
                 <p>Tengo 3 años de experiencia en Community Management, donde he desarrollado habilidades en la creación y gestión de contenido, gestión de redes sociales y atención al cliente. Además, poseo conocimientos en programación, con dominio en los lenguajes Java, PHP, CSS y HTML. También tengo conocimientos básicos de diseño, incluyendo el uso de Photoshop.</p>
-                
+
                 <a href="Ima/MarvinAjquejay.pdf" download="MarvinAjquejayCV" target="_blank" class="accion">Descargar</a>
             </div>
-         <div class="ilustracionesLandingPage"> 
+         <div class="ilustracionesLandingPage">
             <img src="Ima/persona.png" alt="">
             <img src="Ima/FORMA.svg" alt="" class="forma">
          </div>
@@ -53,7 +55,7 @@
             <img src="Ima/1.png" alt="" class="Marys" >
             <a href="MesaDeTrabajo/PortafolioExtendido.html">
                 <div class="overlay">
-                    
+
                     <h3>Marys GT</h3>
                     <p>Encargado de asistir a las personas, en su mayoría
                         mujeres en la compra de productos de la canasta
@@ -63,7 +65,7 @@
                         la página web por medio de la plataforma Shopify.
                         Desmostrando habilidades en el uso de Photoshop
                         para caaptar la atención de nuestros clientes.</p>
-                    
+
                     </div>
                 </a>
 
@@ -92,16 +94,16 @@
         </div>
 
     </section>
- 
+
     <section class="contenedor">
         <div class="Experiencia">
-        
+
         <section class="form-register" id="contacto">
             <h4>Formulario</h4>
             <form action="https://formsubmit.co/marmat.matias1997@gmail.com" method="POST">
          <input class="controls"   type="text" name="name" id="name" placeholder="Ingrese Su nombre">
          <input class="controls" type="email" name="email" id="email" placeholder="Ingrese Su Correo">
-         <textarea class="controls"id="coments" class="input" name="coments" rows="7" cols="30"  placeholder="Dinos tus comentarios"></textarea><br />
+         <textarea class="controls" id="coments" name="coments" rows="7" cols="30" placeholder="Dinos tus comentarios"></textarea><br />
          <input class="botons" type="submit" value="Enviar">
          <input type="hidden" name="_next" value="https://marmat1997.github.io/FinalMarvinAjquejay/">
          <input type="hidden" name="_captcha" value="false">
@@ -109,12 +111,11 @@
          <!-- <input class="botons" type="submit" value="Enviar"> -->
          <!-- <input type="hidden" name="_next" value=""> -->
         </section>
-        
+
             </div>
-        
+
         </section>
     <script src="https://kit.fontawesome.com/f955c68031.js" crossorigin="anonymous"></script>
-    </script>
       <i class="desplazarse-hacia-arriba" id="desplazarse-hacia-arriba"
       ><img
         src="Ima/flecha.png"
