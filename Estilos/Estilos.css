@@ -2,7 +2,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    
+
 }
 :root{
     --colorTextos: #7e7e7e;
@@ -14,6 +14,11 @@
 body{
     font-family: 'montserrat';
     background: linear-gradient(180deg, rgba(25,28,50,1) 25%, rgba(70,77,126,1) 100%);
+    overflow-x: hidden;
+}
+img, svg, video{
+    max-width: 100%;
+    height: auto;
 }
 /* .menu-nav{
     text-align: right;
@@ -25,13 +30,23 @@ body{
     justify-content: space-between;
     padding-top: 2em;
     align-items: center;
-   
+    position: relative;
+
 }
 .logo{
     height: inherit;
     /* height: 100px; */
     width: 150px;
     margin-left: 1em;
+}
+.menu-toggle{
+    display: none;
+    background: none;
+    border: none;
+    color: aliceblue;
+    font-size: 32px;
+    cursor: pointer;
+    margin-right: 1em;
 }
 .Enlaces{
 display: flex;
@@ -78,12 +93,12 @@ transition: ease-in .2s;
     #1B1934
 } */
 .contenedor-textos  h1{
-    font-size: 60px;
+    font-size: clamp(28px, 6vw, 60px);
     color: aliceblue;
 }
 .contenedor-textos p{
     margin: 15px 0 30px 0;
-    font-size: 18px;
+    font-size: clamp(14px, 2vw, 18px);
     color: white;
 }
 .ilustracionesLandingPage{
@@ -92,7 +107,7 @@ transition: ease-in .2s;
     display: flex;
     justify-content: center;
     align-items: center;
-    position: relative; 
+    position: relative;
 }
 .ilustracionesLandingPage :nth-child(1){
     width: 90%;
@@ -126,7 +141,7 @@ color:aqua;
     }
     .accion:hover{
         background: #1B1934;
-        transition: ease-in .2s;  
+        transition: ease-in .2s;
     }
     .ContainerTrabajos{
         display: flex;
@@ -142,13 +157,14 @@ color:aqua;
     }
    .tituloPortafolio h2{
     color: #fff;
-    font-size: 30px;
+    font-size: clamp(22px, 4vw, 30px);
    }
     .ContainerTrabajos img{
         display: block;
         object-fit: cover;
         width: 552px;
         height:552px;
+        max-width: 100%;
         box-shadow: 0 0 10px rgba(0, 0, 0, .5);
         border-radius: 10px;
     }
@@ -183,7 +199,7 @@ color:aqua;
         letter-spacing: 3px;
         opacity: 0;
     }
-    
+
 .ContainerTrabajos .proyecto .overlay h3{
     margin-bottom: 20px;
     transition: 0.5s;
@@ -201,7 +217,8 @@ color:aqua;
     margin-bottom: 0px;
 }
 .form-register{
-    width: 400px;
+    width: 90%;
+    max-width: 400px;
     padding: 30px;
     margin: auto;
     margin-top: 100px;
@@ -233,7 +250,7 @@ textarea{
     height: 40px;
     text-align: center;
     font-size: 18px;
-    
+
 }
 .form-register a {
 color: white;
@@ -263,7 +280,7 @@ font-size: 16px;
     /* transition: filter 0.3s ease;
     filter: drop-shadow(0 0 10px white); */
   }
-  
+
   .Tecnologia img:hover{
     /* transition: filter 0.3s ease;
     filter: drop-shadow(0 0 10px 5px rgba(255, 255, 255, 0.5)); */
@@ -401,7 +418,7 @@ font-size: 16px;
     bottom: 3%;
     cursor: pointer;
   }
-  
+
   .flecha-arriba{
     width: 3rem;
     height: 3rem;
@@ -463,7 +480,7 @@ font-size: 16px;
     justify-content: center;
     transition: 0.5s;
     color: #fff;
-    font-size: 20px; 
+    font-size: 20px;
     opacity: 0;
     padding: 25px;
 }
@@ -494,6 +511,7 @@ opacity: 1;
     object-fit: cover;
     width: 350px;
     height:350px;
+    max-width: 100%;
     box-shadow: 0 0 10px rgba(0, 0, 0, .5);
     border-radius: 10px;
     margin: 0 0 2em 2em;
@@ -536,7 +554,7 @@ opacity: 1;
     justify-content: center;
     transition: 0.5s;
     color: #fff;
-    font-size: 20px; 
+    font-size: 20px;
     opacity: 0;
     padding: 25px;
 }
@@ -578,7 +596,7 @@ opacity: 1;
     justify-content: center;
     transition: 0.5s;
     color: #fff;
-    font-size: 20px; 
+    font-size: 20px;
     opacity: 0;
     padding: 25px;
 }
@@ -587,6 +605,108 @@ opacity: 1;
 color: #ffffff;
 opacity: 1;
 }
-.ImagenesPorta img:hover {
+ImagenesPorta img:hover {
     transform: scale(1.2); /* Amplía la imagen al hacer hover */
+}
+
+/* =====================================================
+   Responsivo
+   ===================================================== */
+
+/* Tablets (hasta 1024px) */
+@media (max-width: 1024px){
+    .LandingPage{
+        width: 90vw;
+        height: auto;
+        padding: 3em 0;
+    }
+    .contenedor-textos{ width: 55%; }
+    .ilustracionesLandingPage{ width: 38%; }
+    .ContainerTrabajos img{
+        width: 45vw;
+        height: 45vw;
+        max-width: 400px;
+        max-height: 400px;
+    }
+    /* nav compacta: evita que "Acerca de" se parta en dos líneas antes de
+       que aparezca la hamburguesa en 900px */
+    .Enlaces{
+        width: auto;
+        gap: 0.25em;
+    }
+    .Enlaces a{
+        font-size: 18px;
+        padding: 8px 12px;
+        white-space: nowrap;
+    }
+}
+
+/* Tablets verticales / móviles grandes (hasta 900px) */
+@media (max-width: 900px){
+    .MenuNavegacion{ padding: 1em; }
+    .menu-toggle{ display: block; }
+    .Enlaces{
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        flex-direction: column;
+        width: 100%;
+        background: #191932;
+        text-align: center;
+        z-index: 10;
+        padding: 0.5em 0;
+    }
+    .Enlaces.activo{ display: flex; }
+    .Enlaces a{
+        display: block;
+        font-size: 20px;
+        padding: 14px 20px;
+    }
+
+    .LandingPage{
+        flex-direction: column;
+        width: 90vw;
+        height: auto;
+        text-align: center;
+        gap: 1.5em;
+        padding: 2.5em 0;
+    }
+    .Redes{ order: 3; justify-content: center; }
+    .Redes i{ font-size: 48px; }
+    .contenedor-textos{ order: 1; width: 100%; }
+    .ilustracionesLandingPage{ order: 2; width: 65%; }
+
+    .ContainerTrabajos{ padding: 0 1em 2em; }
+    .ContainerTrabajos img{
+        width: 100%;
+        height: auto;
+        aspect-ratio: 1 / 1;
+        max-width: 480px;
+    }
+
+    .form-register{ margin-top: 60px; }
+
+    .Experiencia1 img{
+        width: 100%;
+        height: auto;
+        max-width: 350px;
+    }
+}
+
+/* Móviles pequeños (hasta 480px) */
+@media (max-width: 480px){
+    .logo{ width: 110px; }
+    .accion{ width: 100%; }
+    .ImagenesPorta img{
+        width: 100%;
+        height: auto;
+        max-width: 300px;
+    }
+    .servicios{ gap: 1em; }
+    .servicio1, .servicio2, .servicio3{
+        width: 8em;
+        height: 8em;
+        font-size: 16px;
+    }
 }
