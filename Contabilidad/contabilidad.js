@@ -8,6 +8,7 @@ const CLAVE_CORRECTA = "41051997";
 const CLAVE_MAXIMA_LONGITUD = 8;
 const LLAVE_SESION = "contabilidad_unlocked";
 const LLAVE_DATOS = "contabilidad_movimientos";
+const LLAVE_SEED = "contabilidad_seed_v1";
 
 const pantallaAcceso = document.getElementById("pantalla-acceso");
 const appContabilidad = document.getElementById("app-contabilidad");
@@ -40,7 +41,113 @@ function desbloquear() {
   pantallaAcceso.hidden = true;
   appContabilidad.hidden = false;
   sessionStorage.setItem(LLAVE_SESION, "1");
+  sembrarDatosHistoricos();
   renderTodo();
+}
+
+// ============================================================
+// Datos históricos (ene–sep 2026) tomados del resumen financiero
+// previo. Se cargan UNA sola vez, solo si todavía no hay ningún
+// movimiento guardado en este navegador — así no pisa nada que
+// Marvin ya haya capturado a mano.
+// Nota: como el resumen original solo traía totales por mes y
+// categoría (no el día exacto de cada gasto), cada movimiento se
+// fecha el día 1 de su mes correspondiente — es una aproximación,
+// no la fecha real de la transacción.
+// ============================================================
+function sembrarDatosHistoricos() {
+  if (localStorage.getItem(LLAVE_SEED) === "1") return;
+  if (cargarMovimientos().length > 0) {
+    localStorage.setItem(LLAVE_SEED, "1");
+    return;
+  }
+
+  const fechasMes = [
+    "2026-01-01", "2026-02-01", "2026-03-01", "2026-04-01", "2026-05-01",
+    "2026-06-01", "2026-07-01", "2026-08-01", "2026-09-01",
+  ];
+
+  // Gasto promedio/total por categoría y mes (ene–sep), igual que en
+  // el resumen financiero: cada valor es el total de esa categoría
+  // en ese mes.
+  const categoriasHist = [
+    { nombre: "Regalos",        categoria: "Variable", data: [425, 40, 500, 1300, 8041, 450, 2280, 290, 0] },
+    { nombre: "Tecnología",     categoria: "Variable", data: [110, 110, 0, 0, 0, 4000, 0, 2500, 0] },
+    { nombre: "Alimentación",   categoria: "Variable", data: [155, 335, 210, 0, 103, 971.5, 748, 817, 0] },
+    { nombre: "Oaca",           categoria: "Variable", data: [50, 0, 720, 250, 0, 258, 314, 1359, 0] },
+    { nombre: "Servicio Claro", categoria: "Fijo",     data: [316, 0, 250, 0, 0, 415, 318, 641, 0] },
+    { nombre: "Salud/Seguros",  categoria: "Fijo",     data: [205, 205, 205, 205, 205, 205, 205, 205, 0] },
+    { nombre: "Plataforma",     categoria: "Fijo",     data: [0, 0, 60, 0, 0, 497, 335, 154, 52] },
+    { nombre: "Ocio",           categoria: "Variable", data: [0, 825, 0, 0, 0, 0, 0, 0, 0] },
+    { nombre: "Luz",            categoria: "Fijo",     data: [0, 0, 0, 200, 0, 200, 200, 200, 0] },
+    { nombre: "Otros",          categoria: "Otro",     data: [600, 0, 0, 0, 0, 0, 0, 100, 0] },
+    { nombre: "Educación",      categoria: "Variable", data: [400, 0, 150, 0, 0, 100, 0, 0, 0] },
+    { nombre: "Ropa",           categoria: "Variable", data: [0, 0, 0, 0, 0, 130, 350, 0, 0] },
+    { nombre: "Discos",         categoria: "Variable", data: [175, 0, 0, 0, 0, 0, 0, 175, 0] },
+    { nombre: "Despensa",       categoria: "Variable", data: [0, 0, 0, 0, 0, 91, 0, 143, 0] },
+    { nombre: "Transporte",     categoria: "Variable", data: [0, 0, 0, 0, 0, 55, 82, 85, 0] },
+  ];
+
+  // Ingresos totales del mes (abril no estaba registrado en el
+  // resumen original, así que no se incluye).
+  const ingresosMes = [5613, 7166, 2983, null, 4870, 6134, 10544, 6340, null];
+
+  const semilla = [];
+  let idBase = Date.now() - 1000000;
+
+  categoriasHist.forEach((cat) => {
+    cat.data.forEach((valor, i) => {
+      if (valor > 0) {
+        semilla.push({
+          id: idBase++,
+          tipo: "gasto",
+          concepto: cat.nombre,
+          monto: valor,
+          fecha: fechasMes[i],
+          categoria: cat.categoria,
+        });
+      }
+    });
+  });
+
+  ingresosMes.forEach((valor, i) => {
+    if (valor) {
+      semilla.push({
+        id: idBase++,
+        tipo: "ingreso",
+        concepto: "Ingresos del mes",
+        monto: valor,
+        fecha: fechasMes[i],
+        categoria: "Otro",
+      });
+    }
+  });
+
+  // Pago de Letty del 1 de septiembre: Q225 de interés es ingreso
+  // real; el capital (Q5,000) no se cuenta como ingreso porque es
+  // solo el retorno de dinero ya prestado, no ganancia.
+  semilla.push({
+    id: idBase++,
+    tipo: "ingreso",
+    concepto: "Interés Letty (pago 1 sep)",
+    monto: 225,
+    fecha: "2026-09-01",
+    categoria: "Otro",
+  });
+
+  // Saldo activo del préstamo a Letty después del pago del 1 de
+  // septiembre (bajó de Q15,000 a Q10,000).
+  semilla.push({
+    id: idBase++,
+    tipo: "prestamo",
+    concepto: "Préstamo a Letty (saldo activo, 1.5%/mes)",
+    monto: 10000,
+    fecha: "2026-09-01",
+    categoria: "Otro",
+  });
+
+  guardarMovimientos(semilla);
+  localStorage.setItem(LLAVE_SEED, "1");
 }
 
 function bloquear() {
