@@ -1,0 +1,315 @@
+/* ============ Contabilidad — estilos propios ============ */
+
+[hidden]{
+    display: none !important;
+}
+
+.contabilidad-body{
+    min-height: 100vh;
+}
+
+/* ---------- Pantalla de acceso ---------- */
+.acceso-contenedor{
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2em 1em;
+}
+.acceso-caja{
+    width: 100%;
+    max-width: 380px;
+    background: rgba(25, 25, 50, 0.6);
+    border: 1px solid #464d7e;
+    border-radius: 14px;
+    padding: 40px 30px;
+    text-align: center;
+    box-shadow: 7px 13px 37px rgba(0,0,0,.5);
+}
+.acceso-candado{
+    font-size: 44px;
+    margin-bottom: 10px;
+}
+.acceso-caja h1{
+    color: aliceblue;
+    font-size: 30px;
+    margin-bottom: 8px;
+}
+.acceso-subtitulo{
+    color: var(--colorTextos);
+    font-size: 14px;
+    margin-bottom: 28px;
+}
+.acceso-input{
+    width: 100%;
+    text-align: center;
+    letter-spacing: 8px;
+    font-size: 22px;
+    padding: 14px 10px;
+    border-radius: 8px;
+    border: 1px solid #784e91;
+    background: #34094d;
+    color: white;
+    margin-bottom: 18px;
+}
+.acceso-input:focus{
+    outline: 2px solid var(--colorBoton);
+}
+.acceso-boton{
+    width: 100%;
+    padding: 14px 0;
+    border: none;
+    border-radius: 8px;
+    background: steelblue;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background .2s ease-in;
+}
+.acceso-boton:hover{
+    background: #1B1934;
+}
+.acceso-error{
+    color: #ff6b6b;
+    margin-top: 16px;
+    font-size: 14px;
+}
+.acceso-volver{
+    display: inline-block;
+    margin-top: 26px;
+    color: var(--colorTextos);
+    text-decoration: none;
+    font-size: 14px;
+}
+.acceso-volver:hover{
+    color: aliceblue;
+}
+
+/* shake animation on wrong password */
+.acceso-caja.shake{
+    animation: shake .4s;
+}
+@keyframes shake{
+    10%, 90% { transform: translateX(-2px); }
+    20%, 80% { transform: translateX(4px); }
+    30%, 50%, 70% { transform: translateX(-8px); }
+    40%, 60% { transform: translateX(8px); }
+}
+
+/* ---------- App ---------- */
+.contabilidad-header{
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 1.5em 2em;
+    flex-wrap: wrap;
+}
+.contabilidad-logo{
+    width: 60px;
+}
+.contabilidad-header h1{
+    color: aliceblue;
+    font-size: 24px;
+    flex: 1;
+}
+.btn-bloquear{
+    background: none;
+    border: 1px solid #464d7e;
+    color: aliceblue;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+}
+.btn-bloquear:hover{
+    background: #1B1934;
+}
+
+.resumen-tarjetas{
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    padding: 0 2em;
+    margin-bottom: 2em;
+}
+.tarjeta{
+    background: rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-left: 4px solid #784e91;
+}
+.tarjeta-ingresos{ border-left-color: #7ED957; }
+.tarjeta-gastos{ border-left-color: #fd7115; }
+.tarjeta-prestamos{ border-left-color: #f69229; }
+.tarjeta-balance{ border-left-color: #4aa8ff; }
+.tarjeta-etiqueta{
+    color: var(--colorTextos);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.tarjeta-monto{
+    color: #fff;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.panel-registro{
+    margin: 0 2em 2em;
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+    padding: 20px;
+}
+.tabs-tipo{
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.tab-tipo{
+    background: none;
+    border: 1px solid #464d7e;
+    color: aliceblue;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+}
+.tab-tipo.activo{
+    background: steelblue;
+    border-color: steelblue;
+}
+.form-movimiento{
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr auto;
+    gap: 12px;
+    align-items: center;
+}
+.form-movimiento .controls{
+    margin-bottom: 0;
+}
+.form-movimiento .botons{
+    width: auto;
+    padding: 10px 20px;
+    margin: 0;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.panel-tabla{
+    margin: 0 2em 3em;
+}
+.tabla-header{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.tabla-header h2{
+    color: #fff;
+    font-size: 20px;
+}
+.btn-exportar{
+    background: #784e91;
+    border: none;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+}
+.btn-exportar:hover{
+    background: #34094d;
+}
+.capturable{
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+    padding: 20px;
+}
+#capturable-titulo{
+    color: aliceblue;
+    font-size: 16px;
+    margin-bottom: 14px;
+    font-weight: normal;
+}
+.tabla-movimientos{
+    width: 100%;
+    border-collapse: collapse;
+    color: #fff;
+    font-size: 14px;
+}
+.tabla-movimientos th{
+    text-align: left;
+    padding: 10px 8px;
+    border-bottom: 1px solid #464d7e;
+    color: var(--colorTextos);
+    font-weight: normal;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+.tabla-movimientos td{
+    padding: 10px 8px;
+    border-bottom: 1px solid rgba(70,77,126,0.4);
+}
+.tabla-movimientos tr.fila-ingreso td:nth-child(4){ color: #7ED957; }
+.tabla-movimientos tr.fila-gasto td:nth-child(4){ color: #ff9d6e; }
+.tabla-movimientos tr.fila-prestamo td:nth-child(4){ color: #f69229; }
+.btn-eliminar{
+    background: none;
+    border: none;
+    color: #ff6b6b;
+    cursor: pointer;
+    font-size: 16px;
+}
+.tabla-vacio{
+    color: var(--colorTextos);
+    text-align: center;
+    padding: 20px 0;
+}
+
+/* ---------- Responsivo ---------- */
+@media (max-width: 900px){
+    .resumen-tarjetas{
+        grid-template-columns: repeat(2, 1fr);
+        padding: 0 1em;
+    }
+    .panel-registro, .panel-tabla{
+        margin-left: 1em;
+        margin-right: 1em;
+    }
+    .form-movimiento{
+        grid-template-columns: 1fr 1fr;
+    }
+    .form-movimiento .botons{
+        grid-column: 1 / -1;
+        width: 100%;
+    }
+    .contabilidad-header{
+        padding: 1.2em;
+    }
+    .contabilidad-header h1{
+        font-size: 20px;
+    }
+    .tabla-movimientos{
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 480px){
+    .resumen-tarjetas{
+        grid-template-columns: 1fr;
+    }
+    .form-movimiento{
+        grid-template-columns: 1fr;
+    }
+    .acceso-caja{
+        padding: 30px 20px;
+    }
+}

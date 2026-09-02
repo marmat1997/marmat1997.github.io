@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contabilidad | Marvin Ajquejay</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" href="../Ima/favicon2.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../Estilos/Estilos.css">
+    <link rel="stylesheet" href="contabilidad.css">
+</head>
+<body class="contabilidad-body">
+
+    <!-- ============ PANTALLA DE ACCESO ============ -->
+    <section id="pantalla-acceso" class="acceso-contenedor">
+        <div class="acceso-caja">
+            <div class="acceso-candado">&#128274;</div>
+            <h1>Contabilidad</h1>
+            <p class="acceso-subtitulo">Acceso privado &mdash; ingresa tu clave numérica</p>
+
+            <form id="form-acceso" autocomplete="off">
+                <input
+                    type="password"
+                    id="input-clave"
+                    class="acceso-input"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                    maxlength="8"
+                    placeholder="••••••••"
+                    autocomplete="off"
+                    autofocus
+                >
+                <button type="submit" class="acceso-boton">Entrar</button>
+            </form>
+            <p id="acceso-error" class="acceso-error" hidden>Clave incorrecta. Intenta de nuevo.</p>
+
+            <a href="../index.html" class="acceso-volver">&larr; Volver al inicio</a>
+        </div>
+    </section>
+
+    <!-- ============ APP DE CONTABILIDAD (oculta hasta desbloquear) ============ -->
+    <div id="app-contabilidad" hidden>
+        <header class="contabilidad-header">
+            <a href="../index.html" class="contabilidad-logo-link">
+                <img src="../Ima/4Mesa de trabajo 1@4x.png" alt="" class="contabilidad-logo">
+            </a>
+            <h1>Contabilidad Personal</h1>
+            <button id="btn-bloquear" class="btn-bloquear" title="Bloquear">&#128274; Bloquear</button>
+        </header>
+
+        <section class="resumen-tarjetas">
+            <div class="tarjeta tarjeta-ingresos">
+                <span class="tarjeta-etiqueta">Ingresos</span>
+                <span class="tarjeta-monto" id="total-ingresos">Q0.00</span>
+            </div>
+            <div class="tarjeta tarjeta-gastos">
+                <span class="tarjeta-etiqueta">Gastos</span>
+                <span class="tarjeta-monto" id="total-gastos">Q0.00</span>
+            </div>
+            <div class="tarjeta tarjeta-prestamos">
+                <span class="tarjeta-etiqueta">Préstamos</span>
+                <span class="tarjeta-monto" id="total-prestamos">Q0.00</span>
+            </div>
+            <div class="tarjeta tarjeta-balance">
+                <span class="tarjeta-etiqueta">Balance</span>
+                <span class="tarjeta-monto" id="total-balance">Q0.00</span>
+            </div>
+        </section>
+
+        <section class="panel-registro">
+            <div class="tabs-tipo">
+                <button class="tab-tipo activo" data-tipo="ingreso">+ Ingreso</button>
+                <button class="tab-tipo" data-tipo="gasto">+ Gasto</button>
+                <button class="tab-tipo" data-tipo="prestamo">+ Préstamo</button>
+            </div>
+
+            <form id="form-movimiento" class="form-movimiento">
+                <input type="text" id="mov-concepto" class="controls" placeholder="Concepto (ej. Sueldo, Internet Claro)" required>
+                <input type="number" id="mov-monto" class="controls" placeholder="Monto (Q)" step="0.01" min="0" required>
+                <input type="date" id="mov-fecha" class="controls" required>
+                <select id="mov-categoria" class="controls">
+                    <option value="Fijo">Gasto fijo</option>
+                    <option value="Variable">Gasto variable</option>
+                    <option value="Ahorro">Ahorro</option>
+                    <option value="Otro">Otro</option>
+                </select>
+                <button type="submit" class="botons">Agregar</button>
+            </form>
+        </section>
+
+        <section class="panel-tabla">
+            <div class="tabla-header">
+                <h2 id="tabla-titulo">Movimientos</h2>
+                <button id="btn-exportar" class="btn-exportar">&#128247; Exportar imagen</button>
+            </div>
+            <div id="capturable" class="capturable">
+                <h3 id="capturable-titulo">Contabilidad Personal &mdash; Marvin Matias</h3>
+                <table id="tabla-movimientos" class="tabla-movimientos">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Concepto</th>
+                            <th>Categoría</th>
+                            <th>Monto</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-cuerpo"></tbody>
+                </table>
+                <p id="tabla-vacio" class="tabla-vacio">Todavía no hay movimientos registrados.</p>
+            </div>
+        </section>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="contabilidad.js"></script>
+</body>
+</html>
