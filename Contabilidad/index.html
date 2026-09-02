@@ -83,7 +83,6 @@
             <a href="../index.html" class="acceso-volver">&larr; Volver al inicio</a>
         </div>
     </section>
-
     <!-- ============ APP DE CONTABILIDAD (oculta hasta desbloquear) ============ -->
     <div id="app-contabilidad" hidden>
         <header class="contabilidad-header">
@@ -122,27 +121,75 @@
                 <button class="tab-tipo" data-tipo="prestamo">+ Préstamo</button>
             </div>
 
+            <div id="panel-categorias" class="panel-categorias">
+                <p class="panel-categorias-titulo">Categoría</p>
+                <div id="grid-categorias" class="cat-grid"></div>
+                <form id="form-nueva-categoria" class="form-nueva-categoria" hidden>
+                    <input type="text" id="nueva-categoria-nombre" class="controls" placeholder="Nombre de la nueva categoría" maxlength="30" required>
+                    <button type="submit" class="botons">Guardar</button>
+                    <button type="button" id="btn-cancelar-nueva-categoria" class="btn-cancelar-chico">Cancelar</button>
+                </form>
+            </div>
+
             <form id="form-movimiento" class="form-movimiento">
                 <input type="text" id="mov-concepto" class="controls" placeholder="Concepto (ej. Sueldo, Internet Claro)" required>
                 <input type="number" id="mov-monto" class="controls" placeholder="Monto (Q)" step="0.01" min="0" required>
                 <input type="date" id="mov-fecha" class="controls" required>
-                <select id="mov-categoria" class="controls">
-                    <option value="Fijo">Gasto fijo</option>
-                    <option value="Variable">Gasto variable</option>
-                    <option value="Ahorro">Ahorro</option>
-                    <option value="Otro">Otro</option>
-                </select>
                 <button type="submit" class="botons">Agregar</button>
             </form>
         </section>
+        <section class="panel-graficas">
+            <h2 class="panel-titulo">Gráficas</h2>
+            <div class="graficas-grid">
+                <div class="grafica-card">
+                    <h3 class="grafica-titulo">Histórico mensual</h3>
+                    <div class="grafica-lienzo">
+                        <canvas id="chart-historial"></canvas>
+                    </div>
+                </div>
+                <div class="grafica-card">
+                    <div class="grafica-card-header">
+                        <h3 class="grafica-titulo">Gasto por categoría</h3>
+                        <div class="tabs-periodo-cat">
+                            <button type="button" id="toggle-cat-mes" class="tab-cat-periodo activo">Este mes</button>
+                            <button type="button" id="toggle-cat-todo" class="tab-cat-periodo">Todo</button>
+                        </div>
+                    </div>
+                    <div class="grafica-lienzo">
+                        <canvas id="chart-categorias"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
 
+        <section class="panel-proyeccion">
+            <h2 class="panel-titulo">Proyección</h2>
+            <div class="resumen-tarjetas proyeccion-tarjetas">
+                <div class="tarjeta tarjeta-balance">
+                    <span class="tarjeta-etiqueta">Gasto proyectado del mes</span>
+                    <span class="tarjeta-monto" id="proy-gasto-mes">Q0.00</span>
+                </div>
+                <div class="tarjeta tarjeta-ingresos">
+                    <span class="tarjeta-etiqueta">Ahorro mensual promedio</span>
+                    <span class="tarjeta-monto" id="proy-ahorro-promedio">Q0.00</span>
+                </div>
+                <div class="tarjeta tarjeta-prestamos">
+                    <span class="tarjeta-etiqueta">Patrimonio actual</span>
+                    <span class="tarjeta-monto" id="proy-patrimonio-actual">Q0.00</span>
+                </div>
+                <div class="tarjeta tarjeta-balance">
+                    <span class="tarjeta-etiqueta">Patrimonio proyectado a diciembre</span>
+                    <span class="tarjeta-monto" id="proy-patrimonio-dic">Q0.00</span>
+                </div>
+            </div>
+            <p class="proyeccion-nota">Estas proyecciones se calculan automáticamente a partir de los movimientos que registras aquí; no incluyen cuentas, efectivo u otros bienes que no hayas anotado en la app.</p>
+        </section>
         <section class="panel-tabla">
             <div class="tabla-header">
                 <h2 id="tabla-titulo">Movimientos</h2>
-                <button id="btn-exportar" class="btn-exportar">&#128247; Exportar imagen</button>
+                <button id="btn-exportar-excel" class="btn-exportar">&#128202; Exportar Excel</button>
             </div>
-            <div id="capturable" class="capturable">
-                <h3 id="capturable-titulo">Contabilidad Personal &mdash; Marvin Matias</h3>
+            <div class="tabla-contenedor">
                 <table id="tabla-movimientos" class="tabla-movimientos">
                     <thead>
                         <tr>
@@ -158,9 +205,28 @@
                 <p id="tabla-vacio" class="tabla-vacio">Todavía no hay movimientos registrados.</p>
             </div>
         </section>
+
+        <div id="panel-exportar" class="panel-exportar-overlay" hidden>
+            <div class="panel-exportar-caja">
+                <h3>Exportar a Excel</h3>
+                <p class="panel-exportar-subtitulo">Elige el periodo que quieres exportar.</p>
+                <div class="tabs-periodo">
+                    <button type="button" class="tab-periodo" data-periodo="dia">Día</button>
+                    <button type="button" class="tab-periodo" data-periodo="semana">Semana</button>
+                    <button type="button" class="tab-periodo activo" data-periodo="mes">Mes</button>
+                    <button type="button" class="tab-periodo" data-periodo="anio">Año</button>
+                </div>
+                <div id="export-input-container" class="export-input-container"></div>
+                <div class="panel-exportar-botones">
+                    <button type="button" id="btn-confirmar-exportar" class="acceso-boton">Exportar</button>
+                    <button type="button" id="btn-cancelar-exportar" class="btn-cancelar-chico">Cancelar</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script type="module" src="contabilidad.js"></script>
 </body>
 </html>
