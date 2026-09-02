@@ -12,8 +12,53 @@
 </head>
 <body class="contabilidad-body">
 
-    <!-- ============ PANTALLA DE ACCESO ============ -->
-    <section id="pantalla-acceso" class="acceso-contenedor">
+    <!-- ============ PANTALLA DE CARGA (mientras se verifica la sesión) ============ -->
+    <section id="pantalla-carga" class="acceso-contenedor">
+        <div class="acceso-caja">
+            <p class="acceso-cargando">Cargando&hellip;</p>
+        </div>
+    </section>
+
+    <!-- ============ PANTALLA DE LOGIN (cuenta real, sincroniza entre dispositivos) ============ -->
+    <section id="pantalla-login" class="acceso-contenedor" hidden>
+        <div class="acceso-caja">
+            <div class="acceso-candado">&#128272;</div>
+            <h1 id="login-titulo">Iniciar sesión</h1>
+            <p class="acceso-subtitulo">Tus datos ahora se guardan en una cuenta real para verlos desde cualquier dispositivo.</p>
+
+            <form id="form-login" autocomplete="on">
+                <input
+                    type="email"
+                    id="login-email"
+                    class="acceso-input-texto"
+                    placeholder="Correo electrónico"
+                    autocomplete="email"
+                    required
+                >
+                <input
+                    type="password"
+                    id="login-password"
+                    class="acceso-input-texto"
+                    placeholder="Contraseña (mínimo 6 caracteres)"
+                    autocomplete="current-password"
+                    minlength="6"
+                    required
+                >
+                <button type="submit" class="acceso-boton" id="login-submit-btn">Entrar</button>
+            </form>
+            <p id="login-error" class="acceso-error" hidden></p>
+            <p class="login-toggle">
+                <span id="login-toggle-texto">¿No tienes cuenta todavía?</span>
+                <button type="button" id="login-toggle-btn" class="login-toggle-btn">Crear cuenta</button>
+            </p>
+            <p class="login-info">Solo la cuenta autorizada de Marvin puede leer o escribir estos datos, sin importar quién inicie sesión aquí.</p>
+
+            <a href="../index.html" class="acceso-volver">&larr; Volver al inicio</a>
+        </div>
+    </section>
+
+    <!-- ============ PANTALLA DE ACCESO (bloqueo rápido con PIN) ============ -->
+    <section id="pantalla-acceso" class="acceso-contenedor" hidden>
         <div class="acceso-caja">
             <div class="acceso-candado">&#128274;</div>
             <h1>Contabilidad</h1>
@@ -46,7 +91,9 @@
                 <img src="../Ima/4Mesa de trabajo 1@4x.png" alt="" class="contabilidad-logo">
             </a>
             <h1>Contabilidad Personal</h1>
+            <span id="sesion-usuario" class="sesion-usuario"></span>
             <button id="btn-bloquear" class="btn-bloquear" title="Bloquear">&#128274; Bloquear</button>
+            <button id="btn-cerrar-sesion" class="btn-cerrar-sesion" title="Cerrar sesión de este dispositivo">Cerrar sesión</button>
         </header>
 
         <section class="resumen-tarjetas">
@@ -114,6 +161,6 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="contabilidad.js"></script>
+    <script type="module" src="contabilidad.js"></script>
 </body>
 </html>
