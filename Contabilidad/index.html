@@ -95,6 +95,12 @@
             <button id="btn-cerrar-sesion" class="btn-cerrar-sesion" title="Cerrar sesión de este dispositivo">Cerrar sesión</button>
         </header>
 
+        <nav class="vista-nav">
+            <button type="button" class="tab-vista activo" data-vista="movimientos">Movimientos</button>
+            <button type="button" class="tab-vista" data-vista="cuentas">Cuentas</button>
+        </nav>
+
+        <div id="vista-movimientos">
         <section class="resumen-tarjetas">
             <div class="tarjeta tarjeta-ingresos">
                 <span class="tarjeta-etiqueta">Ingresos</span>
@@ -119,6 +125,7 @@
                 <button class="tab-tipo activo" data-tipo="ingreso">+ Ingreso</button>
                 <button class="tab-tipo" data-tipo="gasto">+ Gasto</button>
                 <button class="tab-tipo" data-tipo="prestamo">+ Préstamo</button>
+                <button class="tab-tipo" data-tipo="transferencia">&#8646; Transferencia</button>
             </div>
 
             <div id="panel-categorias" class="panel-categorias">
@@ -129,6 +136,22 @@
                     <button type="submit" class="botons">Guardar</button>
                     <button type="button" id="btn-cancelar-nueva-categoria" class="btn-cancelar-chico">Cancelar</button>
                 </form>
+            </div>
+
+            <div id="panel-cuenta-simple" class="panel-cuenta-simple">
+                <p class="panel-categorias-titulo">Cuenta</p>
+                <select id="mov-cuenta" class="controls"></select>
+            </div>
+
+            <div id="panel-cuenta-transferencia" class="panel-cuenta-transferencia" hidden>
+                <div class="panel-cuenta-transferencia-campo">
+                    <p class="panel-categorias-titulo">Desde</p>
+                    <select id="mov-cuenta-origen" class="controls"></select>
+                </div>
+                <div class="panel-cuenta-transferencia-campo">
+                    <p class="panel-categorias-titulo">Hacia</p>
+                    <select id="mov-cuenta-destino" class="controls"></select>
+                </div>
             </div>
 
             <form id="form-movimiento" class="form-movimiento">
@@ -184,6 +207,7 @@
             </div>
             <p class="proyeccion-nota">Estas proyecciones se calculan automáticamente a partir de los movimientos que registras aquí; no incluyen cuentas, efectivo u otros bienes que no hayas anotado en la app.</p>
         </section>
+
         <section class="panel-tabla">
             <div class="tabla-header">
                 <h2 id="tabla-titulo">Movimientos</h2>
@@ -204,6 +228,22 @@
                 </table>
                 <p id="tabla-vacio" class="tabla-vacio">Todavía no hay movimientos registrados.</p>
             </div>
+        </section>
+        </div>
+        <section id="vista-cuentas" class="vista-cuentas" hidden>
+            <div class="panel-cuentas-header">
+                <h2 class="panel-titulo">Cuentas</h2>
+                <button type="button" id="btn-nueva-cuenta" class="btn-exportar">+ Agregar cuenta</button>
+            </div>
+            <p class="proyeccion-nota">El saldo de cada cuenta se calcula solo con los ingresos, gastos y transferencias que le asignes; también puedes corregirlo a mano en cualquier momento (por ejemplo, para cuadrarlo con tu banco).</p>
+            <form id="form-nueva-cuenta" class="form-nueva-categoria" hidden>
+                <input type="text" id="nueva-cuenta-nombre" class="controls" placeholder="Nombre de la cuenta (ej. Efectivo, BAM)" maxlength="30" required>
+                <input type="number" id="nueva-cuenta-saldo" class="controls" placeholder="Saldo inicial (Q)" step="0.01">
+                <button type="submit" class="botons">Guardar</button>
+                <button type="button" id="btn-cancelar-nueva-cuenta" class="btn-cancelar-chico">Cancelar</button>
+            </form>
+            <div id="grid-cuentas" class="grid-cuentas"></div>
+            <p id="cuentas-vacio" class="tabla-vacio" hidden>Todavía no tienes cuentas. Agrega la primera arriba.</p>
         </section>
 
         <div id="panel-exportar" class="panel-exportar-overlay" hidden>
