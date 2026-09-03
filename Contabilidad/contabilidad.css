@@ -187,6 +187,7 @@
 .btn-cerrar-sesion:hover{
     background: #1B1934;
 }
+
 /* ---------- Nav de vistas (Movimientos / Cuentas) ---------- */
 .vista-nav{
     display: flex;
@@ -368,6 +369,7 @@
     background: #1B1934;
     color: aliceblue;
 }
+
 /* ---------- Selector de cuenta (en el formulario de movimiento) ---------- */
 .panel-cuenta-simple{
     margin-bottom: 16px;
@@ -523,6 +525,7 @@
     background: steelblue;
     border-color: steelblue;
 }
+
 /* ---------- Proyección ---------- */
 .panel-proyeccion{
     margin: 0 2em 3em;
@@ -668,6 +671,7 @@
     text-align: center;
     padding: 20px 0;
 }
+
 /* ---------- Responsivo ---------- */
 @media (max-width: 900px){
     .resumen-tarjetas{
