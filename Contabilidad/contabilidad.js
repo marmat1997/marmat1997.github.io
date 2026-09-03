@@ -1244,10 +1244,13 @@ const movMonto = document.getElementById("mov-monto");
 const movFecha = document.getElementById("mov-fecha");
 const tablaCuerpo = document.getElementById("tabla-cuerpo");
 const tablaVacio = document.getElementById("tabla-vacio");
+const btnGuardarMovimiento = document.getElementById("btn-guardar-movimiento");
+const btnCancelarEdicionMov = document.getElementById("btn-cancelar-edicion-mov");
 
 let tipoActivo = "ingreso";
 let movimientosCache = [];
 let unsubscribeMovs = null;
+let editandoMovId = null;
 
 // fecha de hoy por defecto
 movFecha.valueAsDate = new Date();
@@ -1283,6 +1286,12 @@ function desuscribirMovimientos() {
     unsubscribeMovs = null;
   }
   movimientosCache = [];
+  if (editandoMovId) {
+    editandoMovId = null;
+    formMovimiento.reset();
+    movFecha.valueAsDate = new Date();
+    actualizarModoFormulario();
+  }
 }
 
 function formatoQ(numero) {
@@ -1320,9 +1329,22 @@ function renderTabla() {
       <td>${escaparHtml(mov.concepto)}</td>
       <td>${columnaCategoria}</td>
       <td>${columnaMonto}</td>
-      <td><button class="btn-eliminar" data-id="${mov.id}" title="Eliminar">&times;</button></td>
+      <td>
+        <div class="tabla-acciones">
+          <button class="btn-editar-mov" data-id="${mov.id}" title="Editar">&#9998;</button>
+          <button class="btn-eliminar" data-id="${mov.id}" title="Eliminar">&times;</button>
+        </div>
+      </td>
     `;
     tablaCuerpo.appendChild(tr);
+  });
+
+  tablaCuerpo.querySelectorAll(".btn-editar-mov").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      const mov = movimientosCache.find((m) => m.id === id);
+      if (mov) iniciarEdicionMovimiento(mov);
+    });
   });
 
   tablaCuerpo.querySelectorAll(".btn-eliminar").forEach((btn) => {
@@ -1371,6 +1393,67 @@ function renderTodo() {
   renderGraficas();
   renderProyeccion();
   renderGridCuentas();
+}
+
+// ============================================================
+// Edición de movimientos existentes: reutiliza el formulario de
+// arriba (mismo panel de categorías y de cuentas) precargado con
+// los datos del movimiento elegido. Al guardar, se sobrescribe el
+// documento completo en Firestore, así que el saldo de la cuenta y
+// el patrimonio se recalculan solos, porque ya se calculan en vivo
+// a partir de movimientosCache.
+// ============================================================
+
+function actualizarModoFormulario() {
+  if (editandoMovId) {
+    if (btnGuardarMovimiento) btnGuardarMovimiento.textContent = "Guardar cambios";
+    if (btnCancelarEdicionMov) btnCancelarEdicionMov.hidden = false;
+  } else {
+    if (btnGuardarMovimiento) btnGuardarMovimiento.textContent = "Agregar";
+    if (btnCancelarEdicionMov) btnCancelarEdicionMov.hidden = true;
+  }
+}
+
+function cancelarEdicionMovimiento() {
+  editandoMovId = null;
+  formMovimiento.reset();
+  movFecha.valueAsDate = new Date();
+  categoriaSeleccionada = tipoActivo === "prestamo" ? "Préstamo" : "";
+  renderGridCategorias();
+  actualizarModoFormulario();
+}
+
+if (btnCancelarEdicionMov) {
+  btnCancelarEdicionMov.addEventListener("click", cancelarEdicionMovimiento);
+}
+
+function iniciarEdicionMovimiento(mov) {
+  editandoMovId = mov.id;
+
+  tabsTipo.forEach((b) => b.classList.toggle("activo", b.dataset.tipo === mov.tipo));
+  tipoActivo = mov.tipo;
+  categoriaSeleccionada = mov.tipo === "transferencia" ? "" : (mov.categoria || "");
+
+  movConcepto.value = mov.concepto || "";
+  movMonto.value = mov.monto != null ? mov.monto : "";
+  movFecha.value = mov.fecha || "";
+
+  renderGridCategorias();
+  actualizarPanelesCuentaPorTipo();
+  renderSelectoresCuenta();
+
+  if (mov.tipo === "transferencia") {
+    const selectOrigen = document.getElementById("mov-cuenta-origen");
+    const selectDestino = document.getElementById("mov-cuenta-destino");
+    if (selectOrigen && mov.cuentaOrigenId) selectOrigen.value = mov.cuentaOrigenId;
+    if (selectDestino && mov.cuentaDestinoId) selectDestino.value = mov.cuentaDestinoId;
+  } else if (mov.tipo !== "prestamo") {
+    const selectCuenta = document.getElementById("mov-cuenta");
+    if (selectCuenta && mov.cuentaId) selectCuenta.value = mov.cuentaId;
+  }
+
+  actualizarModoFormulario();
+  formMovimiento.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 formMovimiento.addEventListener("submit", (e) => {
@@ -1428,12 +1511,21 @@ formMovimiento.addEventListener("submit", (e) => {
   const btnEnviar = formMovimiento.querySelector('button[type="submit"]');
   if (btnEnviar) btnEnviar.disabled = true;
 
-  addDoc(collection(db, COLECCION_MOVS), nuevo)
+  // Al editar, se sobrescribe el documento completo (sin merge) para que
+  // no queden campos viejos de otro tipo de movimiento (por ejemplo,
+  // cuentaOrigenId/cuentaDestinoId si antes era una transferencia).
+  const promesaGuardar = editandoMovId
+    ? setDoc(doc(db, COLECCION_MOVS, editandoMovId), nuevo)
+    : addDoc(collection(db, COLECCION_MOVS), nuevo);
+
+  promesaGuardar
     .then(() => {
+      editandoMovId = null;
       formMovimiento.reset();
       movFecha.valueAsDate = new Date();
       categoriaSeleccionada = tipoActivo === "prestamo" ? "Préstamo" : "";
       renderGridCategorias();
+      actualizarModoFormulario();
     })
     .catch((err) => {
       console.error("Error guardando movimiento:", err);
@@ -1672,6 +1764,8 @@ if (btnExportarExcel) {
   btnExportarExcel.addEventListener("click", () => {
     panelExportar.hidden = false;
     crearInputPeriodo(periodoExportActivo);
+    const resumenCopiadoMsgEl = document.getElementById("resumen-copiado-msg");
+    if (resumenCopiadoMsgEl) resumenCopiadoMsgEl.hidden = true;
   });
 }
 if (btnCancelarExportar) {
@@ -1774,5 +1868,142 @@ if (btnConfirmarExportar) {
     const nombreArchivo = "contabilidad-" + periodoExportActivo + "-" + String(valor).replace(/\s+/g, "") + ".xlsx";
     XLSX.writeFile(libro, nombreArchivo);
     panelExportar.hidden = true;
+  });
+}
+
+// ============================================================
+// Copiar resumen en texto (para pegarlo y que cualquier IA, incluyendo
+// Claude, lo pueda leer y analizar): mismo selector de periodo que la
+// exportación a Excel, pero en vez de generar un archivo arma un texto
+// plano con el resumen del periodo, el saldo de las cuentas, el gasto
+// por categoría y el detalle de cada movimiento, y lo copia al
+// portapapeles.
+// ============================================================
+
+const btnCopiarResumen = document.getElementById("btn-copiar-resumen");
+const resumenCopiadoMsg = document.getElementById("resumen-copiado-msg");
+
+function generarResumenTexto(rango) {
+  const filtrados = movimientosCache.filter((m) => m.fecha >= rango.inicio && m.fecha <= rango.fin);
+  const ingresos = filtrados.filter((m) => m.tipo === "ingreso").reduce((a, m) => a + (Number(m.monto) || 0), 0);
+  const gastos = filtrados.filter((m) => m.tipo === "gasto").reduce((a, m) => a + (Number(m.monto) || 0), 0);
+  const prestamos = filtrados.filter((m) => m.tipo === "prestamo").reduce((a, m) => a + (Number(m.monto) || 0), 0);
+  const balance = ingresos - gastos;
+
+  const q = (n) => "Q" + (Number(n) || 0).toFixed(2);
+  const lineas = [];
+
+  lineas.push("=== Resumen financiero de Marvin Matias ===");
+  lineas.push(`Periodo: ${rango.etiqueta} (${rango.inicio} a ${rango.fin})`);
+  lineas.push(`Generado: ${new Date().toISOString().slice(0, 10)}`);
+  lineas.push("Montos en quetzales guatemaltecos (Q).");
+  lineas.push("");
+
+  lineas.push("RESUMEN DEL PERIODO");
+  lineas.push(`Ingresos: ${q(ingresos)}`);
+  lineas.push(`Gastos: ${q(gastos)}`);
+  lineas.push(`Préstamos (movimientos tipo préstamo, no se suman al balance): ${q(prestamos)}`);
+  lineas.push(`Balance (ingresos - gastos): ${q(balance)}`);
+  lineas.push("");
+
+  if (cuentasCache.length > 0) {
+    lineas.push("SALDO ACTUAL DE CUENTAS (a hoy, no limitado al periodo elegido)");
+    let totalCuentas = 0;
+    cuentasCache.forEach((cuenta) => {
+      const saldo = calcularSaldoCuenta(cuenta.id);
+      totalCuentas += saldo;
+      lineas.push(`${cuenta.nombre}: ${q(saldo)}`);
+    });
+    lineas.push(`Total: ${q(totalCuentas)}`);
+    lineas.push("");
+  }
+
+  const gastosPorCat = {};
+  filtrados
+    .filter((m) => m.tipo === "gasto")
+    .forEach((m) => {
+      const cat = m.categoria || "Otros";
+      gastosPorCat[cat] = (gastosPorCat[cat] || 0) + (Number(m.monto) || 0);
+    });
+  const entradasCat = Object.entries(gastosPorCat).sort((a, b) => b[1] - a[1]);
+  if (entradasCat.length > 0) {
+    lineas.push("GASTOS POR CATEGORÍA (dentro del periodo)");
+    entradasCat.forEach(([cat, monto]) => {
+      lineas.push(`${cat}: ${q(monto)}`);
+    });
+    lineas.push("");
+  }
+
+  const ordenados = [...filtrados].sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
+  lineas.push(`MOVIMIENTOS DEL PERIODO (${ordenados.length})`);
+  lineas.push("Fecha | Tipo | Categoría/Cuentas | Concepto | Cuenta | Monto");
+  if (ordenados.length === 0) {
+    lineas.push("(sin movimientos en este periodo)");
+  } else {
+    ordenados.forEach((m) => {
+      const categoriaTxt = m.tipo === "transferencia"
+        ? `${nombreCuenta(m.cuentaOrigenId)} → ${nombreCuenta(m.cuentaDestinoId)}`
+        : (m.categoria || "");
+      const cuentaTxt = m.tipo === "transferencia" ? "" : (m.cuentaId ? nombreCuenta(m.cuentaId) : "");
+      const signo = m.tipo === "gasto" ? "-" : m.tipo === "ingreso" ? "+" : "";
+      lineas.push(`${m.fecha} | ${etiquetaTipo(m.tipo)} | ${categoriaTxt} | ${m.concepto} | ${cuentaTxt} | ${signo}${q(m.monto)}`);
+    });
+  }
+
+  return lineas.join("\n");
+}
+
+function copiarTextoAlPortapapeles(texto) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(texto);
+  }
+  // Alternativa para navegadores sin la API moderna del portapapeles.
+  return new Promise((resolve, reject) => {
+    const textarea = document.createElement("textarea");
+    textarea.value = texto;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    try {
+      const ok = document.execCommand("copy");
+      document.body.removeChild(textarea);
+      if (ok) resolve();
+      else reject(new Error("No se pudo copiar"));
+    } catch (err) {
+      document.body.removeChild(textarea);
+      reject(err);
+    }
+  });
+}
+
+if (btnCopiarResumen) {
+  btnCopiarResumen.addEventListener("click", () => {
+    const inputValor = document.getElementById("export-valor");
+    const valor = inputValor ? inputValor.value : "";
+    const rango = calcularRangoFechas(periodoExportActivo, valor);
+    if (!rango) {
+      alert("Elige un periodo válido.");
+      return;
+    }
+    const texto = generarResumenTexto(rango);
+    btnCopiarResumen.disabled = true;
+    copiarTextoAlPortapapeles(texto)
+      .then(() => {
+        if (resumenCopiadoMsg) {
+          resumenCopiadoMsg.hidden = false;
+          setTimeout(() => {
+            resumenCopiadoMsg.hidden = true;
+          }, 3500);
+        }
+      })
+      .catch((err) => {
+        console.error("Error copiando resumen:", err);
+        alert("No se pudo copiar el resumen. Revisa los permisos del portapapeles e intenta de nuevo.");
+      })
+      .finally(() => {
+        btnCopiarResumen.disabled = false;
+      });
   });
 }
