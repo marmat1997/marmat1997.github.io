@@ -138,6 +138,7 @@
     30%, 50%, 70% { transform: translateX(-8px); }
     40%, 60% { transform: translateX(8px); }
 }
+
 /* ---------- App ---------- */
 .contabilidad-header{
     display: flex;
@@ -185,6 +186,27 @@
 }
 .btn-cerrar-sesion:hover{
     background: #1B1934;
+}
+/* ---------- Nav de vistas (Movimientos / Cuentas) ---------- */
+.vista-nav{
+    display: flex;
+    gap: 10px;
+    padding: 0 2em;
+    margin-bottom: 1.5em;
+    flex-wrap: wrap;
+}
+.tab-vista{
+    background: none;
+    border: 1px solid #464d7e;
+    color: aliceblue;
+    padding: 9px 18px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+}
+.tab-vista.activo{
+    background: #784e91;
+    border-color: #784e91;
 }
 
 .resumen-tarjetas{
@@ -260,6 +282,7 @@
     border-radius: 4px;
     cursor: pointer;
 }
+
 /* ---------- Categorías ---------- */
 .panel-categorias{
     margin-bottom: 16px;
@@ -345,6 +368,104 @@
     background: #1B1934;
     color: aliceblue;
 }
+/* ---------- Selector de cuenta (en el formulario de movimiento) ---------- */
+.panel-cuenta-simple{
+    margin-bottom: 16px;
+}
+.panel-cuenta-simple select,
+.panel-cuenta-transferencia select{
+    margin-bottom: 0;
+}
+.panel-cuenta-transferencia{
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.panel-cuenta-transferencia-campo{
+    flex: 1;
+    min-width: 160px;
+}
+
+/* ---------- Vista de Cuentas ---------- */
+.vista-cuentas{
+    margin: 0 2em 3em;
+}
+.panel-cuentas-header{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.vista-cuentas .proyeccion-nota{
+    margin-bottom: 18px;
+}
+.grid-cuentas{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+}
+.cuenta-card{
+    --cat-color: #784e91;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid #464d7e;
+    border-left: 4px solid var(--cat-color);
+    border-radius: 12px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.cuenta-card-info{
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.cuenta-nombre{
+    color: aliceblue;
+    font-size: 15px;
+    word-break: break-word;
+}
+.cuenta-saldo{
+    color: #fff;
+    font-size: 22px;
+    font-weight: bold;
+}
+.cuenta-card-acciones{
+    display: flex;
+    gap: 8px;
+}
+.cuenta-card-acciones .btn-cancelar-chico{
+    flex: 1;
+}
+.cuenta-card-acciones .btn-eliminar{
+    border: 1px solid #464d7e;
+    border-radius: 6px;
+    padding: 9px 12px;
+}
+.cuenta-card-editar{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.cuenta-card-editar .controls{
+    margin-bottom: 0;
+}
+.cuenta-card-editar-botones{
+    display: flex;
+    gap: 8px;
+}
+.cuenta-card-editar-botones .botons{
+    flex: 1;
+    width: auto;
+    margin: 0;
+    padding: 9px 0;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
 /* ---------- Gráficas ---------- */
 .panel-titulo{
     color: #fff;
@@ -402,7 +523,6 @@
     background: steelblue;
     border-color: steelblue;
 }
-
 /* ---------- Proyección ---------- */
 .panel-proyeccion{
     margin: 0 2em 3em;
@@ -480,6 +600,7 @@
 .panel-exportar-botones .acceso-boton{
     flex: 1;
 }
+
 .panel-tabla{
     margin: 0 2em 3em;
 }
@@ -534,6 +655,7 @@
 .tabla-movimientos tr.fila-ingreso td:nth-child(4){ color: #7ED957; }
 .tabla-movimientos tr.fila-gasto td:nth-child(4){ color: #ff9d6e; }
 .tabla-movimientos tr.fila-prestamo td:nth-child(4){ color: #f69229; }
+.tabla-movimientos tr.fila-transferencia td:nth-child(4){ color: #4aa8ff; }
 .btn-eliminar{
     background: none;
     border: none;
@@ -546,16 +668,18 @@
     text-align: center;
     padding: 20px 0;
 }
-
 /* ---------- Responsivo ---------- */
 @media (max-width: 900px){
     .resumen-tarjetas{
         grid-template-columns: repeat(2, 1fr);
         padding: 0 1em;
     }
-    .panel-registro, .panel-tabla, .panel-graficas, .panel-proyeccion{
+    .panel-registro, .panel-tabla, .panel-graficas, .panel-proyeccion, .vista-cuentas{
         margin-left: 1em;
         margin-right: 1em;
+    }
+    .vista-nav{
+        padding: 0 1em;
     }
     .form-movimiento{
         grid-template-columns: 1fr 1fr;
@@ -601,5 +725,11 @@
     }
     .panel-exportar-caja{
         padding: 24px 18px;
+    }
+    .grid-cuentas{
+        grid-template-columns: 1fr;
+    }
+    .panel-cuenta-transferencia{
+        flex-direction: column;
     }
 }
