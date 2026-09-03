@@ -205,7 +205,8 @@ function desbloquear() {
   sessionStorage.setItem(LLAVE_SESION, "1");
   sembrarDatosHistoricosSiHaceFalta()
     .then(() => migrarCategoriasLegacySiHaceFalta())
-    .then(() => migrarCuentasLegacySiHaceFalta());
+    .then(() => migrarCuentasLegacySiHaceFalta())
+    .then(() => importarDatosPrecisosSiHaceFalta());
   suscribirMovimientos();
   suscribirCategorias();
   suscribirCuentas();
@@ -903,6 +904,332 @@ async function sembrarDatosHistoricosSiHaceFalta() {
     await lote.commit();
   } catch (err) {
     console.error("Error sembrando datos históricos:", err);
+  }
+}
+
+// ============================================================
+// Importación de datos precisos (Excel real de Marvin): 186 gastos,
+// 33 ingresos y 11 transferencias entre el 1 de enero y el 2 de
+// septiembre de 2026, con cuenta y fecha exactas. Reemplaza los
+// datos históricos aproximados (que se estimaban por mes, sin cuenta)
+// y crea las cuentas reales (Banrural, BI, Nexa, Efectivo) con el
+// saldo que tenían antes del 1 de enero de 2026 como ajuste manual,
+// para que el saldo final de cada una quede exacto. Corre UNA sola vez.
+// ============================================================
+
+const CUENTAS_INICIALES_2026 = [
+  { clave: "banrural", nombre: "Banrural", color: "#2ecc71", ajusteManual: 4092, orden: 0 },
+  { clave: "bi", nombre: "BI", color: "#3498db", ajusteManual: 3342.5, orden: 1 },
+  { clave: "nexa", nombre: "Nexa", color: "#9b59b6", ajusteManual: 408, orden: 2 },
+  { clave: "efectivo", nombre: "Efectivo", color: "#1abc9c", ajusteManual: 191, orden: 3 },
+];
+
+// Cada fila: [categoría, monto, fecha, concepto, claveCuenta]
+const GASTOS_INICIALES_2026 = [
+  ["Alimentación",10,"2026-09-02","Alimentación","efectivo"],
+  ["Alimentación",30,"2026-09-02","Alimentación","efectivo"],
+  ["Servicio Claro",35,"2026-09-02","Servicio Claro","efectivo"],
+  ["Alimentación",76,"2026-09-02","Mcdonald's","banrural"],
+  ["Alimentación",45,"2026-09-01","Mcdonald's","banrural"],
+  ["Tecnología",265,"2026-09-01","Mouse","bi"],
+  ["Plataforma",52,"2026-09-01","Prime Video","banrural"],
+  ["Servicio Claro",250,"2026-08-31","Servicio Claro","bi"],
+  ["Alimentación",77,"2026-08-28","Alimentación","bi"],
+  ["Alimentación",30,"2026-08-28","Alimentación","banrural"],
+  ["Alimentación",43,"2026-08-28","Subway","banrural"],
+  ["Tecnología",160,"2026-08-28","Claude","bi"],
+  ["Tecnología",1500,"2026-08-27","Tecnología","banrural"],
+  ["Salud",205,"2026-08-27","Seguro","bi"],
+  ["Transporte",25,"2026-08-24","Transporte","efectivo"],
+  ["Tecnología",100,"2026-08-24","Tecnología","banrural"],
+  ["Alimentación",57,"2026-08-24","Alimentación","banrural"],
+  ["Transporte",60,"2026-08-22","Transporte","efectivo"],
+  ["Oaca",800,"2026-08-21","POKÉMON primer pago segundo pago es igusl a 800","bi"],
+  ["Alimentación",115,"2026-08-20","Alimentación","banrural"],
+  ["Tecnología",47,"2026-08-20","Tecnología","banrural"],
+  ["Despensa",93,"2026-08-20","Despensa","banrural"],
+  ["Servicio Claro",65,"2026-08-20","Servicio Claro","bi"],
+  ["Despensa",50,"2026-08-20","Dolar","banrural"],
+  ["Préstamo",100,"2026-08-20","Abner","banrural"],
+  ["Regalos",290,"2026-08-20","Daniela","banrural"],
+  ["Tecnología",446,"2026-08-20","Mouse","banrural"],
+  ["Alimentación",55,"2026-08-19","Alimentación","banrural"],
+  ["Luz",200,"2026-08-19","Luz","banrural"],
+  ["Discos",175,"2026-08-15","Discos","bi"],
+  ["Préstamo",200,"2026-08-14","Abner","banrural"],
+  ["Alimentación",109,"2026-08-14","Alimentación","banrural"],
+  ["Tecnología",47,"2026-08-14","Tecnología","banrural"],
+  ["Alimentación",110,"2026-08-14","Gogreen","banrural"],
+  ["Otros",100,"2026-08-09","Otros","efectivo"],
+  ["Servicio Claro",10,"2026-08-09","Servicio Claro","bi"],
+  ["Oaca",85,"2026-08-09","Fornite","bi"],
+  ["Plataforma",107,"2026-08-09","Netflix","bi"],
+  ["Alimentación",77,"2026-08-09","Burger","bi"],
+  ["Servicio Claro",65,"2026-08-09","Servicio Claro","banrural"],
+  ["Oaca",195,"2026-08-09","Pokémon","banrural"],
+  ["Oaca",46,"2026-08-09","Cine","banrural"],
+  ["Alimentación",69,"2026-08-09","Alimentación","banrural"],
+  ["Plataforma",47,"2026-08-09","Paramount","banrural"],
+  ["Alimentación",30,"2026-08-09","Alimentación","banrural"],
+  ["Tecnología",200,"2026-08-09","Medidor Wats","banrural"],
+  ["Oaca",193,"2026-08-09","Cine","banrural"],
+  ["Servicio Claro",251,"2026-08-03","Servicio Claro","bi"],
+  ["Oaca",40,"2026-08-01","Oaca","banrural"],
+  ["Alimentación",45,"2026-08-01","Subway","banrural"],
+  ["Alimentación",15,"2026-07-31","Alimentación","efectivo"],
+  ["Alimentación",41,"2026-07-29","Alimentación","bi"],
+  ["Plataforma",15,"2026-07-29","Plataforma","nexa"],
+  ["Transporte",5,"2026-07-29","Transporte","banrural"],
+  ["Plataforma",90,"2026-07-29","Disney","banrural"],
+  ["Oaca",108,"2026-07-29","Cine","banrural"],
+  ["Transporte",41,"2026-07-29","Uber","banrural"],
+  ["Plataforma",50,"2026-07-29","Prime Video","banrural"],
+  ["Alimentación",40,"2026-07-29","Alimentación","bi"],
+  ["Alimentación",30,"2026-07-29","Mcdonald's","efectivo"],
+  ["Regalos",950,"2026-07-27","Compras TEMU","banrural"],
+  ["Salud",205,"2026-07-27","Seguro","bi"],
+  ["Transporte",6,"2026-07-25","Transporte","banrural"],
+  ["Alimentación",84,"2026-07-25","Alimentación","bi"],
+  ["Alimentación",67,"2026-07-25","Alimentación","bi"],
+  ["Alimentación",10,"2026-07-25","TiendaDeBarrio","efectivo"],
+  ["Alimentación",45,"2026-07-25","Alimentación","efectivo"],
+  ["Regalos",30,"2026-07-25","EnvíoCD","efectivo"],
+  ["Luz",200,"2026-07-25","Luz","efectivo"],
+  ["Alimentación",20,"2026-07-23","Café","efectivo"],
+  ["Ropa",350,"2026-07-23","Playeras","efectivo"],
+  ["Regalos",250,"2026-07-23","TecladoRegaloParaMarleny","bi"],
+  ["Regalos",330,"2026-07-23","DiscoDaftPunk","bi"],
+  ["Regalos",400,"2026-07-21","Mio","bi"],
+  ["Regalos",110,"2026-07-21","Regalos","banrural"],
+  ["Alimentación",23,"2026-07-20","Alimentación","banrural"],
+  ["Transporte",5,"2026-07-18","Transporte","banrural"],
+  ["Oaca",45,"2026-07-18","POKÉMON","efectivo"],
+  ["Alimentación",20,"2026-07-18","Comida","efectivo"],
+  ["Alimentación",15,"2026-07-17","Tienda","efectivo"],
+  ["Alimentación",10,"2026-07-17","Granizada","efectivo"],
+  ["Alimentación",25,"2026-07-17","Pupusas","efectivo"],
+  ["Servicio Claro",65,"2026-07-17","Servicio Claro","banrural"],
+  ["Alimentación",35,"2026-07-15","Mcdonald's","banrural"],
+  ["Regalos",210,"2026-07-15","Daniela Regalo","banrural"],
+  ["Alimentación",15,"2026-07-11","Alimentación","efectivo"],
+  ["Alimentación",45,"2026-07-11","Pollo granjero","efectivo"],
+  ["Alimentación",25,"2026-07-11","Pupusas","efectivo"],
+  ["Plataforma",80,"2026-07-09","Fornite","bi"],
+  ["Plataforma",100,"2026-07-09","Netflix","bi"],
+  ["Alimentación",33,"2026-07-09","Cafee","bi"],
+  ["Oaca",121,"2026-07-09","Cine","bi"],
+  ["Alimentación",45,"2026-07-09","Pizza","banrural"],
+  ["Servicio Claro",253,"2026-07-05","Servicio Claro","bi"],
+  ["Préstamo",40,"2026-07-04","Relojes","efectivo"],
+  ["Oaca",40,"2026-07-04","Juego steam","banrural"],
+  ["Alimentación",20,"2026-07-04","Alimentación","efectivo"],
+  ["Transporte",25,"2026-07-04","Transporte","efectivo"],
+  ["Alimentación",60,"2026-07-04","Mcdonald's","banrural"],
+  ["Alimentación",25,"2026-07-02","Alimentación","efectivo"],
+  ["Oaca",7,"2026-06-30","Vpn","banrural"],
+  ["Servicio Claro",65,"2026-06-30","Servicio Claro","banrural"],
+  ["Alimentación",25,"2026-06-30","Alimentación","efectivo"],
+  ["Transporte",30,"2026-06-30","Transporte","banrural"],
+  ["Oaca",201,"2026-06-29","Videojuego Mitad","nexa"],
+  ["Plataforma",165,"2026-06-29","Claude","bi"],
+  ["Alimentación",75,"2026-06-29","Café frío","banrural"],
+  ["Tecnología",4000,"2026-06-29","Laptop","bi"],
+  ["Salud",205,"2026-06-27","Seguro","bi"],
+  ["Alimentación",35,"2026-06-25","Taco Bell","banrural"],
+  ["Alimentación",40,"2026-06-25","Pizza","banrural"],
+  ["Préstamo",70,"2026-06-25","Documentos Mynor","banrural"],
+  ["Alimentación",64,"2026-06-23","Alimentación","banrural"],
+  ["Transporte",20,"2026-06-23","Transporte","banrural"],
+  ["Despensa",91,"2026-06-23","Despensa","banrural"],
+  ["Alimentación",30,"2026-06-23","Alimentación","efectivo"],
+  ["Transporte",5,"2026-06-20","Transporte","efectivo"],
+  ["Alimentación",20,"2026-06-20","Alimentación","efectivo"],
+  ["Alimentación",30,"2026-06-20","Pollo granjero","efectivo"],
+  ["Alimentación",30,"2026-06-19","Alimentación","efectivo"],
+  ["Alimentación",50,"2026-06-19","Alimentación","efectivo"],
+  ["Alimentación",45,"2026-06-19","Alimentación","bi"],
+  ["Préstamo",64,"2026-06-17","Baterías Mynor","banrural"],
+  ["Alimentación",56,"2026-06-17","Alimentación","banrural"],
+  ["Préstamo",100,"2026-06-17","Jacky","banrural"],
+  ["Alimentación",42,"2026-06-16","Granjero","efectivo"],
+  ["Oaca",50,"2026-06-16","Mangateca Disco abono","bi"],
+  ["Plataforma",285,"2026-06-16","Office 365","bi"],
+  ["Luz",200,"2026-06-15","Luz","efectivo"],
+  ["Plataforma",47,"2026-06-15","Paramount","banrural"],
+  ["Préstamo",1123,"2026-06-15","Relojes","bi"],
+  ["Servicio Claro",65,"2026-06-13","Saldo","banrural"],
+  ["Alimentación",72,"2026-06-13","Gauchitos","banrural"],
+  ["Alimentación",44,"2026-06-13","Alimentación","banrural"],
+  ["Ropa",130,"2026-06-13","Ropa","banrural"],
+  ["Alimentación",38.5,"2026-06-11","Alimentación","bi"],
+  ["Servicio Claro",285,"2026-06-09","Servicio Claro","bi"],
+  ["Préstamo",100,"2026-06-06","Ale","bi"],
+  ["Préstamo",335,"2026-06-05","Préstamo","efectivo"],
+  ["Alimentación",75,"2026-06-05","Alimentación","bi"],
+  ["Alimentación",200,"2026-06-02","Comida","efectivo"],
+  ["Educación",100,"2026-06-02","Ahorro","efectivo"],
+  ["Regalos",450,"2026-06-02","Álbum","efectivo"],
+  ["Salud",205,"2026-05-27","Seguro","bi"],
+  ["Regalos",8000,"2026-05-26","Celular","bi"],
+  ["Alimentación",103,"2026-05-18","Alimentación","nexa"],
+  ["Regalos",41,"2026-05-18","Regalos","nexa"],
+  ["Salud",205,"2026-04-27","Seguro","bi"],
+  ["Oaca",250,"2026-04-25","poke","bi"],
+  ["Regalos",300,"2026-04-18","VOLANTE","efectivo"],
+  ["Luz",200,"2026-04-18","Luz","efectivo"],
+  ["Regalos",1000,"2026-04-03","Regalos","efectivo"],
+  ["Salud",205,"2026-03-27","Seguro","bi"],
+  ["Alimentación",60,"2026-03-21","Alimentación","efectivo"],
+  ["Regalos",120,"2026-03-21","Regalos","bi"],
+  ["Alimentación",60,"2026-03-21","Alimentación","bi"],
+  ["Regalos",380,"2026-03-21","Regalos","bi"],
+  ["Educación",150,"2026-03-14","Educación","bi"],
+  ["Alimentación",90,"2026-03-08","Alimentación","bi"],
+  ["Servicio Claro",250,"2026-03-05","Servicio Claro","bi"],
+  ["Oaca",720,"2026-03-02","Oaca","bi"],
+  ["Plataforma",60,"2026-03-01","Plataforma","bi"],
+  ["Ocio",75,"2026-02-27","Ocio","bi"],
+  ["Ocio",250,"2026-02-27","Ocio","bi"],
+  ["Salud",205,"2026-02-27","Seguro","bi"],
+  ["Alimentación",255,"2026-02-21","Alimentación","bi"],
+  ["Ocio",500,"2026-02-19","Ocio","bi"],
+  ["Tecnología",50,"2026-02-17","Tecnología","bi"],
+  ["Regalos",40,"2026-02-14","Regalos","efectivo"],
+  ["Tecnología",60,"2026-02-14","Tecnología","efectivo"],
+  ["Alimentación",80,"2026-02-13","Alimentación","bi"],
+  ["Salud",205,"2026-01-27","Seguro","bi"],
+  ["Préstamo",3000,"2026-01-24","Marleny","bi"],
+  ["Alimentación",40,"2026-01-18","Alimentación","bi"],
+  ["Otros",500,"2026-01-17","Arturo","bi"],
+  ["Servicio Claro",60,"2026-01-14","Servicio Claro","bi"],
+  ["Tecnología",110,"2026-01-13","Tintas","bi"],
+  ["Discos",175,"2026-01-13","Discos","bi"],
+  ["Regalos",150,"2026-01-11","Regalos","efectivo"],
+  ["Alimentación",50,"2026-01-11","Alimentación","efectivo"],
+  ["Otros",100,"2026-01-08","Otros","efectivo"],
+  ["Educación",400,"2026-01-08","Educación","bi"],
+  ["Servicio Claro",256,"2026-01-07","Servicio Claro","bi"],
+  ["Oaca",50,"2026-01-03","Oaca","efectivo"],
+  ["Regalos",275,"2026-01-03","Discos","efectivo"],
+  ["Alimentación",65,"2026-01-01","Alimentación","efectivo"],
+];
+
+const INGRESOS_INICIALES_2026 = [
+  ["Préstamo",5000,"2026-09-01","Letty","banrural"],
+  ["Interés",225,"2026-09-01","Interés","banrural"],
+  ["Salario",2870,"2026-08-31","Salario","bi"],
+  ["Salario",600,"2026-08-28","Salario","bi"],
+  ["Salario",2870,"2026-08-14","Salario","bi"],
+  ["Salario",2870,"2026-07-30","Salario","bi"],
+  ["Ventas",225,"2026-07-25","Ventas","banrural"],
+  ["Ventas",220,"2026-07-23","Ventas","banrural"],
+  ["Interés",225,"2026-07-19","Préstamo Letty","banrural"],
+  ["Ventas",150,"2026-07-15","VentasPersonales","banrural"],
+  ["Salario",2870,"2026-07-15","Salario","bi"],
+  ["Salario",662,"2026-07-14","Artes","bi"],
+  ["Salario",3322,"2026-07-11","Bono 14","bi"],
+  ["Préstamo",100,"2026-07-09","Devolución de cine","banrural"],
+  ["Salario",2867,"2026-06-28","Salario","bi"],
+  ["Préstamo",100,"2026-06-23","Préstamo","efectivo"],
+  ["Préstamo",20000,"2026-06-17","Letty","banrural"],
+  ["Regalo",100,"2026-06-14","Ale","bi"],
+  ["Interés",300,"2026-06-13","Lety","banrural"],
+  ["Salario",2867,"2026-06-13","Salario","bi"],
+  ["Regalo",2000,"2026-05-26","Regalo","efectivo"],
+  ["Salario",2870,"2026-05-16","Salario","bi"],
+  ["Salario",2383,"2026-03-14","Salario","bi"],
+  ["Salario",600,"2026-03-05","Salario","bi"],
+  ["Salario",2383,"2026-02-28","Salario","bi"],
+  ["Salario",1000,"2026-02-27","Salario","bi"],
+  ["Interés",800,"2026-02-19","Interés","bi"],
+  ["Salario",2383,"2026-02-14","Salario","bi"],
+  ["Salario",600,"2026-02-03","Salario","bi"],
+  ["Salario",2330,"2026-01-31","Salario","bi"],
+  ["Salario",2383,"2026-01-17","Salario","bi"],
+  ["Salario",600,"2026-01-06","Salario","bi"],
+  ["Ventas",300,"2026-01-03","Pokémon","bi"],
+];
+
+// Cada fila: [monto, fecha, concepto, claveCuentaOrigen, claveCuentaDestino]
+const TRANSFERENCIAS_INICIALES_2026 = [
+  [200,"2026-09-02","Transferencia","banrural","efectivo"],
+  [90,"2026-08-21","Little","banrural","efectivo"],
+  [200,"2026-08-14","Transferencia","banrural","efectivo"],
+  [200,"2026-08-09","Otros","bi","efectivo"],
+  [400,"2026-07-25","Transferencia","banrural","efectivo"],
+  [646,"2026-07-14","Transferencia","bi","efectivo"],
+  [500,"2026-06-30","Mio","banrural","efectivo"],
+  [2000,"2026-06-30","Relojes ya devuelto","banrural","bi"],
+  [100,"2026-06-16","Mio","efectivo","banrural"],
+  [2000,"2026-06-16","Mynor","bi","banrural"],
+  [850,"2026-02-13","Transferencia","bi","efectivo"],
+];
+
+async function importarDatosPrecisosSiHaceFalta() {
+  try {
+    const metaRef = doc(db, "meta", "estado");
+    const metaSnap = await getDoc(metaRef);
+    if (metaSnap.exists() && metaSnap.data().datosPrecisos2026Importados) return;
+
+    // 1. Borra los movimientos y cuentas existentes (los aproximados /
+    // migrados automáticamente), para reemplazarlos por los datos reales.
+    const movsViejos = await getDocs(collection(db, COLECCION_MOVS));
+    const cuentasViejas = await getDocs(collection(db, COLECCION_CUENTAS));
+    const paraBorrar = [
+      ...movsViejos.docs.map((d) => doc(db, COLECCION_MOVS, d.id)),
+      ...cuentasViejas.docs.map((d) => doc(db, COLECCION_CUENTAS, d.id)),
+    ];
+    for (let i = 0; i < paraBorrar.length; i += 400) {
+      const lote = writeBatch(db);
+      paraBorrar.slice(i, i + 400).forEach((ref) => lote.delete(ref));
+      await lote.commit();
+    }
+
+    // 2. Crea las cuentas reales con su saldo inicial (antes del 1 de enero
+    // de 2026) como ajuste manual.
+    const idPorClave = {};
+    for (const cuenta of CUENTAS_INICIALES_2026) {
+      const ref = doc(collection(db, COLECCION_CUENTAS));
+      await setDoc(ref, {
+        nombre: cuenta.nombre,
+        color: cuenta.color,
+        ajusteManual: cuenta.ajusteManual,
+        orden: cuenta.orden,
+      });
+      idPorClave[cuenta.clave] = ref.id;
+    }
+
+    // 3. Arma los 230 movimientos reales con el id de cuenta ya creado.
+    const nuevosMovs = [];
+    GASTOS_INICIALES_2026.forEach(([categoria, monto, fecha, concepto, claveCuenta]) => {
+      nuevosMovs.push({ tipo: "gasto", categoria, monto, fecha, concepto, cuentaId: idPorClave[claveCuenta] });
+    });
+    INGRESOS_INICIALES_2026.forEach(([categoria, monto, fecha, concepto, claveCuenta]) => {
+      nuevosMovs.push({ tipo: "ingreso", categoria, monto, fecha, concepto, cuentaId: idPorClave[claveCuenta] });
+    });
+    TRANSFERENCIAS_INICIALES_2026.forEach(([monto, fecha, concepto, claveOrigen, claveDestino]) => {
+      nuevosMovs.push({
+        tipo: "transferencia",
+        monto,
+        fecha,
+        concepto,
+        cuentaOrigenId: idPorClave[claveOrigen],
+        cuentaDestinoId: idPorClave[claveDestino],
+      });
+    });
+
+    for (let i = 0; i < nuevosMovs.length; i += 400) {
+      const lote = writeBatch(db);
+      nuevosMovs.slice(i, i + 400).forEach((mov) => {
+        const ref = doc(collection(db, COLECCION_MOVS));
+        lote.set(ref, mov);
+      });
+      await lote.commit();
+    }
+
+    await setDoc(metaRef, { datosPrecisos2026Importados: true, sembrado: true, cuentasMigradas: true }, { merge: true });
+  } catch (err) {
+    console.error("Error importando datos precisos:", err);
   }
 }
 
