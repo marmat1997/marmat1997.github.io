@@ -603,6 +603,24 @@
 .panel-exportar-botones .acceso-boton{
     flex: 1;
 }
+.acceso-boton-secundario{
+    background: #464d7e;
+}
+.acceso-boton-secundario:hover{
+    background: #34094d;
+}
+.btn-cancelar-ancho{
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+    text-align: center;
+}
+.resumen-copiado-msg{
+    color: #7ED957;
+    font-size: 13px;
+    margin-top: 14px;
+    text-align: center;
+}
 
 .panel-tabla{
     margin: 0 2em 3em;
@@ -659,6 +677,18 @@
 .tabla-movimientos tr.fila-gasto td:nth-child(4){ color: #ff9d6e; }
 .tabla-movimientos tr.fila-prestamo td:nth-child(4){ color: #f69229; }
 .tabla-movimientos tr.fila-transferencia td:nth-child(4){ color: #4aa8ff; }
+.tabla-acciones{
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+.btn-editar-mov{
+    background: none;
+    border: none;
+    color: #4aa8ff;
+    cursor: pointer;
+    font-size: 15px;
+}
 .btn-eliminar{
     background: none;
     border: none;
@@ -692,6 +722,10 @@
         grid-column: 1 / -1;
         width: 100%;
     }
+    .form-movimiento .btn-cancelar-edicion-mov{
+        grid-column: 1 / -1;
+        width: 100%;
+    }
     .contabilidad-header{
         padding: 1.2em;
     }
@@ -712,6 +746,9 @@
 }
 
 @media (max-width: 480px){
+    .panel-exportar-botones{
+        flex-direction: column;
+    }
     .resumen-tarjetas{
         grid-template-columns: 1fr;
     }
