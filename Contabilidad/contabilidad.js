@@ -48,6 +48,7 @@ const auth = getAuth(appFirebase);
 const db = getFirestore(appFirebase);
 const COLECCION_MOVS = "movimientos";
 const COLECCION_CATS = "categorias";
+const COLECCION_CUENTAS = "cuentas";
 
 setPersistence(auth, browserLocalPersistence).catch((err) => {
   console.error("No se pudo configurar la persistencia de sesión:", err);
@@ -144,6 +145,7 @@ if (btnCerrarSesion) {
   btnCerrarSesion.addEventListener("click", () => {
     desuscribirMovimientos();
     desuscribirCategorias();
+    desuscribirCuentas();
     sessionStorage.removeItem(LLAVE_SESION);
     signOut(auth);
   });
@@ -165,6 +167,7 @@ onAuthStateChanged(auth, (user) => {
   } else {
     desuscribirMovimientos();
     desuscribirCategorias();
+    desuscribirCuentas();
     appContabilidad.hidden = true;
     pantallaAcceso.hidden = true;
     sessionStorage.removeItem(LLAVE_SESION);
@@ -200,15 +203,19 @@ function desbloquear() {
   pantallaAcceso.hidden = true;
   appContabilidad.hidden = false;
   sessionStorage.setItem(LLAVE_SESION, "1");
-  sembrarDatosHistoricosSiHaceFalta().then(() => migrarCategoriasLegacySiHaceFalta());
+  sembrarDatosHistoricosSiHaceFalta()
+    .then(() => migrarCategoriasLegacySiHaceFalta())
+    .then(() => migrarCuentasLegacySiHaceFalta());
   suscribirMovimientos();
   suscribirCategorias();
+  suscribirCuentas();
 }
 
 function bloquear() {
   sessionStorage.removeItem(LLAVE_SESION);
   desuscribirMovimientos();
   desuscribirCategorias();
+  desuscribirCuentas();
   appContabilidad.hidden = true;
   pantallaAcceso.hidden = false;
   inputClave.value = "";
@@ -328,6 +335,11 @@ function renderGridCategorias() {
     categoriaSeleccionada = "Préstamo";
     return;
   }
+  if (tipoActivo === "transferencia") {
+    panelCategorias.hidden = true;
+    categoriaSeleccionada = "";
+    return;
+  }
   panelCategorias.hidden = false;
 
   const cats = obtenerCategorias(tipoActivo);
@@ -405,6 +417,284 @@ if (btnCancelarNuevaCategoria) {
     formNuevaCategoria.hidden = true;
   });
 }
+
+// ============================================================
+// Cuentas (para saber en qué cuenta entra/sale cada movimiento y
+// poder hacer transferencias entre ellas). El saldo de cada cuenta
+// se calcula automáticamente sumando sus ingresos y restando sus
+// gastos y transferencias, más un "ajuste manual" que se puede
+// editar en cualquier momento desde la pestaña Cuentas (por ejemplo
+// para cuadrarla con el saldo real del banco). Al editar el total a
+// mano, ese ajuste se recalcula para que el saldo mostrado quede
+// exactamente en el número que escribiste, y de ahí en adelante los
+// movimientos nuevos lo siguen moviendo con normalidad.
+// ============================================================
+
+const PALETA_CUENTAS = ["#3498db", "#e67e22", "#9b59b6", "#1abc9c", "#e74c3c", "#f1c40f", "#2ecc71", "#e91e63", "#784e91", "#607d8b"];
+
+let cuentasCache = [];
+let unsubscribeCuentas = null;
+let editandoCuentaId = null;
+
+function suscribirCuentas() {
+  if (unsubscribeCuentas) return;
+  unsubscribeCuentas = onSnapshot(
+    collection(db, COLECCION_CUENTAS),
+    (snapshot) => {
+      cuentasCache = snapshot.docs
+        .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+        .sort((a, b) => (a.orden || 0) - (b.orden || 0));
+      renderSelectoresCuenta();
+      renderGridCuentas();
+    },
+    (error) => {
+      console.error("Error leyendo cuentas:", error);
+    }
+  );
+}
+
+function desuscribirCuentas() {
+  if (unsubscribeCuentas) {
+    unsubscribeCuentas();
+    unsubscribeCuentas = null;
+  }
+  cuentasCache = [];
+  editandoCuentaId = null;
+}
+
+function calcularSaldoCuenta(cuentaId) {
+  const cuenta = cuentasCache.find((c) => c.id === cuentaId);
+  const ajuste = cuenta ? Number(cuenta.ajusteManual) || 0 : 0;
+  let neto = 0;
+  movimientosCache.forEach((m) => {
+    if (m.tipo === "ingreso" && m.cuentaId === cuentaId) neto += Number(m.monto) || 0;
+    else if (m.tipo === "gasto" && m.cuentaId === cuentaId) neto -= Number(m.monto) || 0;
+    else if (m.tipo === "transferencia") {
+      if (m.cuentaOrigenId === cuentaId) neto -= Number(m.monto) || 0;
+      if (m.cuentaDestinoId === cuentaId) neto += Number(m.monto) || 0;
+    }
+  });
+  return ajuste + neto;
+}
+
+function nombreCuenta(cuentaId) {
+  const cuenta = cuentasCache.find((c) => c.id === cuentaId);
+  return cuenta ? cuenta.nombre : "(cuenta eliminada)";
+}
+
+function renderSelectoresCuenta() {
+  const selects = [
+    document.getElementById("mov-cuenta"),
+    document.getElementById("mov-cuenta-origen"),
+    document.getElementById("mov-cuenta-destino"),
+  ];
+  selects.forEach((select) => {
+    if (!select) return;
+    const anterior = select.value;
+    select.innerHTML = "";
+    if (cuentasCache.length === 0) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "Agrega una cuenta primero";
+      select.appendChild(opt);
+      select.disabled = true;
+      return;
+    }
+    select.disabled = false;
+    cuentasCache.forEach((cuenta) => {
+      const opt = document.createElement("option");
+      opt.value = cuenta.id;
+      opt.textContent = cuenta.nombre;
+      select.appendChild(opt);
+    });
+    if (cuentasCache.some((c) => c.id === anterior)) select.value = anterior;
+  });
+}
+
+function actualizarPanelesCuentaPorTipo() {
+  const panelSimple = document.getElementById("panel-cuenta-simple");
+  const panelTransferencia = document.getElementById("panel-cuenta-transferencia");
+  if (!panelSimple || !panelTransferencia) return;
+  if (tipoActivo === "transferencia") {
+    panelSimple.hidden = true;
+    panelTransferencia.hidden = false;
+  } else if (tipoActivo === "prestamo") {
+    panelSimple.hidden = true;
+    panelTransferencia.hidden = true;
+  } else {
+    panelSimple.hidden = false;
+    panelTransferencia.hidden = true;
+  }
+}
+
+function renderGridCuentas() {
+  const grid = document.getElementById("grid-cuentas");
+  const vacio = document.getElementById("cuentas-vacio");
+  if (!grid || !vacio) return;
+
+  vacio.hidden = cuentasCache.length > 0;
+  grid.innerHTML = "";
+
+  cuentasCache.forEach((cuenta) => {
+    const card = document.createElement("div");
+    card.className = "cuenta-card";
+    card.style.setProperty("--cat-color", cuenta.color || "#784e91");
+
+    if (editandoCuentaId === cuenta.id) {
+      card.innerHTML = `
+        <div class="cuenta-card-editar">
+          <input type="text" class="controls campo-editar-nombre" value="${escaparHtml(cuenta.nombre)}" maxlength="30">
+          <input type="number" class="controls campo-editar-saldo" value="${calcularSaldoCuenta(cuenta.id).toFixed(2)}" step="0.01">
+          <div class="cuenta-card-editar-botones">
+            <button type="button" class="botons btn-guardar-cuenta" data-id="${cuenta.id}">Guardar</button>
+            <button type="button" class="btn-cancelar-chico btn-cancelar-edicion-cuenta">Cancelar</button>
+          </div>
+        </div>
+      `;
+    } else {
+      card.innerHTML = `
+        <div class="cuenta-card-info">
+          <span class="cuenta-nombre">${escaparHtml(cuenta.nombre)}</span>
+          <span class="cuenta-saldo">${formatoQ(calcularSaldoCuenta(cuenta.id))}</span>
+        </div>
+        <div class="cuenta-card-acciones">
+          <button type="button" class="btn-cancelar-chico btn-editar-cuenta" data-id="${cuenta.id}">Editar</button>
+          <button type="button" class="btn-eliminar btn-eliminar-cuenta" data-id="${cuenta.id}" title="Eliminar">&times;</button>
+        </div>
+      `;
+    }
+    grid.appendChild(card);
+  });
+
+  grid.querySelectorAll(".btn-editar-cuenta").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      editandoCuentaId = btn.dataset.id;
+      renderGridCuentas();
+    });
+  });
+
+  grid.querySelectorAll(".btn-cancelar-edicion-cuenta").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      editandoCuentaId = null;
+      renderGridCuentas();
+    });
+  });
+
+  grid.querySelectorAll(".btn-guardar-cuenta").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      const card = btn.closest(".cuenta-card");
+      const nombre = card.querySelector(".campo-editar-nombre").value.trim();
+      const nuevoSaldo = parseFloat(card.querySelector(".campo-editar-saldo").value);
+      if (!nombre || isNaN(nuevoSaldo)) return;
+      const cuenta = cuentasCache.find((c) => c.id === id);
+      if (!cuenta) return;
+      // El saldo calculado sin el ajuste actual (solo movimientos), para
+      // recalcular el ajuste manual necesario y que el saldo quede
+      // exactamente en el número que escribió.
+      const saldoSoloMovimientos = calcularSaldoCuenta(id) - (Number(cuenta.ajusteManual) || 0);
+      const nuevoAjuste = nuevoSaldo - saldoSoloMovimientos;
+      btn.disabled = true;
+      setDoc(doc(db, COLECCION_CUENTAS, id), { nombre, ajusteManual: nuevoAjuste }, { merge: true })
+        .then(() => {
+          editandoCuentaId = null;
+        })
+        .catch((err) => {
+          console.error("Error actualizando cuenta:", err);
+          alert("No se pudo actualizar la cuenta. Revisa tu conexión e intenta de nuevo.");
+        })
+        .finally(() => {
+          btn.disabled = false;
+        });
+    });
+  });
+
+  grid.querySelectorAll(".btn-eliminar-cuenta").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      const enUso = movimientosCache.some(
+        (m) => m.cuentaId === id || m.cuentaOrigenId === id || m.cuentaDestinoId === id
+      );
+      if (enUso) {
+        alert("Esta cuenta tiene movimientos registrados. Elimina o reasigna esos movimientos antes de borrar la cuenta.");
+        return;
+      }
+      if (!confirm("¿Eliminar esta cuenta?")) return;
+      btn.disabled = true;
+      deleteDoc(doc(db, COLECCION_CUENTAS, id)).catch((err) => {
+        console.error("Error eliminando cuenta:", err);
+        alert("No se pudo eliminar la cuenta. Revisa tu conexión e intenta de nuevo.");
+        btn.disabled = false;
+      });
+    });
+  });
+}
+
+const btnNuevaCuenta = document.getElementById("btn-nueva-cuenta");
+const formNuevaCuenta = document.getElementById("form-nueva-cuenta");
+const nuevaCuentaNombre = document.getElementById("nueva-cuenta-nombre");
+const nuevaCuentaSaldo = document.getElementById("nueva-cuenta-saldo");
+const btnCancelarNuevaCuenta = document.getElementById("btn-cancelar-nueva-cuenta");
+
+if (btnNuevaCuenta) {
+  btnNuevaCuenta.addEventListener("click", () => {
+    formNuevaCuenta.hidden = false;
+    nuevaCuentaNombre.focus();
+  });
+}
+
+if (btnCancelarNuevaCuenta) {
+  btnCancelarNuevaCuenta.addEventListener("click", () => {
+    formNuevaCuenta.reset();
+    formNuevaCuenta.hidden = true;
+  });
+}
+
+if (formNuevaCuenta) {
+  formNuevaCuenta.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const nombre = nuevaCuentaNombre.value.trim();
+    if (!nombre) return;
+    const saldoInicial = parseFloat(nuevaCuentaSaldo.value);
+    const color = PALETA_CUENTAS[cuentasCache.length % PALETA_CUENTAS.length];
+    const btnGuardar = formNuevaCuenta.querySelector('button[type="submit"]');
+    if (btnGuardar) btnGuardar.disabled = true;
+    addDoc(collection(db, COLECCION_CUENTAS), {
+      nombre,
+      color,
+      ajusteManual: isNaN(saldoInicial) ? 0 : saldoInicial,
+      orden: cuentasCache.length,
+    })
+      .then(() => {
+        formNuevaCuenta.reset();
+        formNuevaCuenta.hidden = true;
+      })
+      .catch((err) => {
+        console.error("Error creando cuenta:", err);
+        alert("No se pudo crear la cuenta. Revisa tu conexión e intenta de nuevo.");
+      })
+      .finally(() => {
+        if (btnGuardar) btnGuardar.disabled = false;
+      });
+  });
+}
+
+// ---------- Nav de vistas (Movimientos / Cuentas) ----------
+const tabsVista = document.querySelectorAll(".tab-vista");
+const vistaMovimientos = document.getElementById("vista-movimientos");
+const vistaCuentas = document.getElementById("vista-cuentas");
+
+tabsVista.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    tabsVista.forEach((b) => b.classList.remove("activo"));
+    btn.classList.add("activo");
+    const vista = btn.dataset.vista;
+    if (vistaMovimientos) vistaMovimientos.hidden = vista !== "movimientos";
+    if (vistaCuentas) vistaCuentas.hidden = vista !== "cuentas";
+    if (vista === "cuentas") renderGridCuentas();
+  });
+});
+
 // ============================================================
 // Migración de datos antiguos: los movimientos sembrados antes de
 // que existiera este sistema de categorías con ícono usaban
@@ -452,6 +742,49 @@ async function migrarCategoriasLegacySiHaceFalta() {
     await setDoc(metaRef, { categoriasMigradas: true }, { merge: true });
   } catch (err) {
     console.error("Error migrando categorías antiguas:", err);
+  }
+}
+
+// ============================================================
+// Migración de cuentas: los movimientos de ingreso/gasto guardados
+// antes de que existiera el sistema de cuentas no tienen cuentaId.
+// Esta función corre UNA sola vez, crea una cuenta "General" (si
+// todavía no existe ninguna cuenta) y le asigna esos movimientos
+// antiguos, para que no queden huérfanos.
+// ============================================================
+
+async function migrarCuentasLegacySiHaceFalta() {
+  try {
+    const metaRef = doc(db, "meta", "estado");
+    const metaSnap = await getDoc(metaRef);
+    if (metaSnap.exists() && metaSnap.data().cuentasMigradas) return;
+
+    const todosMovs = await getDocs(collection(db, COLECCION_MOVS));
+    const sinCuenta = todosMovs.docs.filter((docSnap) => {
+      const m = docSnap.data();
+      return (m.tipo === "ingreso" || m.tipo === "gasto") && !m.cuentaId;
+    });
+
+    if (sinCuenta.length > 0) {
+      const cuentasExistentes = await getDocs(query(collection(db, COLECCION_CUENTAS), limit(1)));
+      let cuentaGeneralId;
+      if (!cuentasExistentes.empty) {
+        cuentaGeneralId = cuentasExistentes.docs[0].id;
+      } else {
+        const nuevaRef = doc(collection(db, COLECCION_CUENTAS));
+        await setDoc(nuevaRef, { nombre: "General", color: "#784e91", ajusteManual: 0, orden: 0 });
+        cuentaGeneralId = nuevaRef.id;
+      }
+      const lote = writeBatch(db);
+      sinCuenta.forEach((docSnap) => {
+        lote.update(doc(db, COLECCION_MOVS, docSnap.id), { cuentaId: cuentaGeneralId });
+      });
+      await lote.commit();
+    }
+
+    await setDoc(metaRef, { cuentasMigradas: true }, { merge: true });
+  } catch (err) {
+    console.error("Error migrando cuentas antiguas:", err);
   }
 }
 
@@ -572,6 +905,7 @@ async function sembrarDatosHistoricosSiHaceFalta() {
     console.error("Error sembrando datos históricos:", err);
   }
 }
+
 // ============================================================
 // App de movimientos (ingresos / gastos / préstamos)
 // ============================================================
@@ -598,6 +932,7 @@ tabsTipo.forEach((btn) => {
     tipoActivo = btn.dataset.tipo;
     categoriaSeleccionada = tipoActivo === "prestamo" ? "Préstamo" : "";
     renderGridCategorias();
+    actualizarPanelesCuentaPorTipo();
   });
 });
 
@@ -629,7 +964,7 @@ function formatoQ(numero) {
 }
 
 function etiquetaTipo(tipo) {
-  return { ingreso: "Ingreso", gasto: "Gasto", prestamo: "Préstamo" }[tipo] || tipo;
+  return { ingreso: "Ingreso", gasto: "Gasto", prestamo: "Préstamo", transferencia: "Transferencia" }[tipo] || tipo;
 }
 
 function renderTabla() {
@@ -641,12 +976,23 @@ function renderTabla() {
   ordenados.forEach((mov) => {
     const tr = document.createElement("tr");
     tr.className = "fila-" + mov.tipo;
-    const icono = mov.tipo === "prestamo" ? "🔄" : colorIconoParaTabla(mov);
+
+    let columnaCategoria;
+    let columnaMonto;
+    if (mov.tipo === "transferencia") {
+      columnaCategoria = `&#8646; ${escaparHtml(nombreCuenta(mov.cuentaOrigenId))} &rarr; ${escaparHtml(nombreCuenta(mov.cuentaDestinoId))}`;
+      columnaMonto = `&#8646; ${formatoQ(mov.monto)}`;
+    } else {
+      const icono = mov.tipo === "prestamo" ? "🔄" : colorIconoParaTabla(mov);
+      columnaCategoria = `${icono} ${escaparHtml(mov.categoria || etiquetaTipo(mov.tipo))}`;
+      columnaMonto = `${mov.tipo === "gasto" ? "-" : "+"}${formatoQ(mov.monto)}`;
+    }
+
     tr.innerHTML = `
       <td>${mov.fecha}</td>
       <td>${escaparHtml(mov.concepto)}</td>
-      <td>${icono} ${escaparHtml(mov.categoria || etiquetaTipo(mov.tipo))}</td>
-      <td>${mov.tipo === "gasto" ? "-" : "+"}${formatoQ(mov.monto)}</td>
+      <td>${columnaCategoria}</td>
+      <td>${columnaMonto}</td>
       <td><button class="btn-eliminar" data-id="${mov.id}" title="Eliminar">&times;</button></td>
     `;
     tablaCuerpo.appendChild(tr);
@@ -697,21 +1043,59 @@ function renderTodo() {
   renderTotales();
   renderGraficas();
   renderProyeccion();
+  renderGridCuentas();
 }
 
 formMovimiento.addEventListener("submit", (e) => {
   e.preventDefault();
-  if (tipoActivo !== "prestamo" && !categoriaSeleccionada) {
-    alert("Elige una categoría para este movimiento.");
-    return;
+
+  let nuevo;
+
+  if (tipoActivo === "transferencia") {
+    const selectOrigen = document.getElementById("mov-cuenta-origen");
+    const selectDestino = document.getElementById("mov-cuenta-destino");
+    const cuentaOrigenId = selectOrigen ? selectOrigen.value : "";
+    const cuentaDestinoId = selectDestino ? selectDestino.value : "";
+    if (!cuentaOrigenId || !cuentaDestinoId) {
+      alert("Agrega al menos una cuenta antes de hacer una transferencia.");
+      return;
+    }
+    if (cuentaOrigenId === cuentaDestinoId) {
+      alert("Elige dos cuentas distintas para la transferencia.");
+      return;
+    }
+    nuevo = {
+      tipo: "transferencia",
+      concepto: movConcepto.value.trim(),
+      monto: parseFloat(movMonto.value),
+      fecha: movFecha.value,
+      cuentaOrigenId,
+      cuentaDestinoId,
+    };
+  } else {
+    if (tipoActivo !== "prestamo" && !categoriaSeleccionada) {
+      alert("Elige una categoría para este movimiento.");
+      return;
+    }
+    let cuentaId = "";
+    if (tipoActivo !== "prestamo") {
+      const selectCuenta = document.getElementById("mov-cuenta");
+      cuentaId = selectCuenta ? selectCuenta.value : "";
+      if (!cuentaId) {
+        alert("Agrega al menos una cuenta antes de registrar este movimiento.");
+        return;
+      }
+    }
+    nuevo = {
+      tipo: tipoActivo,
+      concepto: movConcepto.value.trim(),
+      monto: parseFloat(movMonto.value),
+      fecha: movFecha.value,
+      categoria: tipoActivo === "prestamo" ? "Préstamo" : categoriaSeleccionada,
+    };
+    if (cuentaId) nuevo.cuentaId = cuentaId;
   }
-  const nuevo = {
-    tipo: tipoActivo,
-    concepto: movConcepto.value.trim(),
-    monto: parseFloat(movMonto.value),
-    fecha: movFecha.value,
-    categoria: tipoActivo === "prestamo" ? "Préstamo" : categoriaSeleccionada,
-  };
+
   if (!nuevo.concepto || isNaN(nuevo.monto) || !nuevo.fecha) return;
 
   const btnEnviar = formMovimiento.querySelector('button[type="submit"]');
@@ -732,6 +1116,7 @@ formMovimiento.addEventListener("submit", (e) => {
       if (btnEnviar) btnEnviar.disabled = false;
     });
 });
+
 // ============================================================
 // Gráficas (Chart.js): histórico mensual + gasto por categoría
 // ============================================================
@@ -903,6 +1288,7 @@ function renderProyeccion() {
   elPatrimonioDic.textContent = formatoQ(patrimonioDic);
   if (elPatrimonioActual) elPatrimonioActual.textContent = formatoQ(patrimonioActual);
 }
+
 // ============================================================
 // Exportar a Excel por periodo (día / semana / mes / año)
 // ============================================================
@@ -1022,7 +1408,7 @@ if (btnConfirmarExportar) {
     const gastos = filtrados.filter((m) => m.tipo === "gasto").reduce((a, m) => a + (Number(m.monto) || 0), 0);
     const prestamos = filtrados.filter((m) => m.tipo === "prestamo").reduce((a, m) => a + (Number(m.monto) || 0), 0);
 
-    const hojaResumen = XLSX.utils.aoa_to_sheet([
+    const filasResumen = [
       ["Contabilidad Personal — Marvin Matias"],
       ["Periodo", rango.etiqueta],
       [],
@@ -1031,7 +1417,14 @@ if (btnConfirmarExportar) {
       ["Gastos", gastos],
       ["Préstamos", prestamos],
       ["Balance", ingresos - gastos],
-    ]);
+    ];
+    if (cuentasCache.length > 0) {
+      filasResumen.push([], ["Cuentas (saldo actual)", ""]);
+      cuentasCache.forEach((cuenta) => {
+        filasResumen.push([cuenta.nombre, calcularSaldoCuenta(cuenta.id)]);
+      });
+    }
+    const hojaResumen = XLSX.utils.aoa_to_sheet(filasResumen);
 
     const filasDetalle = [...filtrados]
       .sort((a, b) => (a.fecha < b.fecha ? -1 : 1))
@@ -1039,7 +1432,10 @@ if (btnConfirmarExportar) {
         Fecha: m.fecha,
         Tipo: etiquetaTipo(m.tipo),
         Concepto: m.concepto,
-        Categoría: m.categoria || "",
+        Categoría: m.tipo === "transferencia"
+          ? `${nombreCuenta(m.cuentaOrigenId)} → ${nombreCuenta(m.cuentaDestinoId)}`
+          : (m.categoria || ""),
+        Cuenta: m.tipo === "transferencia" ? "" : (m.cuentaId ? nombreCuenta(m.cuentaId) : ""),
         "Monto (Q)": Number(m.monto) || 0,
       }));
     const hojaDetalle = XLSX.utils.json_to_sheet(filasDetalle);
