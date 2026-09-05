@@ -533,6 +533,12 @@ function renderGridCuentas() {
   const vacio = document.getElementById("cuentas-vacio");
   if (!grid || !vacio) return;
 
+  const elPatrimonioTotal = document.getElementById("patrimonio-total-cuentas");
+  if (elPatrimonioTotal) {
+    const totalCuentas = cuentasCache.reduce((acc, c) => acc + calcularSaldoCuenta(c.id), 0);
+    elPatrimonioTotal.textContent = formatoQ(totalCuentas);
+  }
+
   vacio.hidden = cuentasCache.length > 0;
   grid.innerHTML = "";
 
