@@ -404,6 +404,17 @@
 .vista-cuentas .proyeccion-nota{
     margin-bottom: 18px;
 }
+.tarjeta-patrimonio-total{
+    background: rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-left: 4px solid #4aa8ff;
+    max-width: 280px;
+    margin-bottom: 18px;
+}
 .grid-cuentas{
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -772,5 +783,8 @@
     }
     .panel-cuenta-transferencia{
         flex-direction: column;
+    }
+    .tarjeta-patrimonio-total{
+        max-width: 100%;
     }
 }
