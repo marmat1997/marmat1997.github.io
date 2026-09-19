@@ -1252,11 +1252,16 @@ const tablaCuerpo = document.getElementById("tabla-cuerpo");
 const tablaVacio = document.getElementById("tabla-vacio");
 const btnGuardarMovimiento = document.getElementById("btn-guardar-movimiento");
 const btnCancelarEdicionMov = document.getElementById("btn-cancelar-edicion-mov");
+const tabsFiltroTipo = document.querySelectorAll(".tab-filtro-tipo");
+const tabsFiltroFecha = document.querySelectorAll(".tab-filtro-fecha");
+const filtroFechaInputContainer = document.getElementById("filtro-fecha-input-container");
 
 let tipoActivo = "ingreso";
 let movimientosCache = [];
 let unsubscribeMovs = null;
 let editandoMovId = null;
+let tipoFiltroTabla = "todos";
+let periodoFiltroTabla = "todo";
 
 // fecha de hoy por defecto
 movFecha.valueAsDate = new Date();
@@ -1269,6 +1274,83 @@ tabsTipo.forEach((btn) => {
     categoriaSeleccionada = tipoActivo === "prestamo" ? "Préstamo" : "";
     renderGridCategorias();
     actualizarPanelesCuentaPorTipo();
+  });
+});
+
+// ============================================================
+// Filtros de la tabla de movimientos: por tipo (todos / ingresos /
+// gastos / préstamos / transferencias) y por un rango de fecha
+// general (día / semana / mes / año), compartido entre esas
+// categorías. Solo afectan lo que se ve en la tabla de abajo; los
+// totales, gráficas y proyección de arriba siguen mostrando todos
+// los movimientos.
+// ============================================================
+
+function crearInputFiltroFecha(tipo) {
+  if (!filtroFechaInputContainer) return;
+  if (tipo === "todo") {
+    filtroFechaInputContainer.innerHTML = "";
+    return;
+  }
+  const hoy = new Date();
+  if (tipo === "dia") {
+    filtroFechaInputContainer.innerHTML = '<input type="date" id="filtro-fecha-valor" class="controls">';
+  } else if (tipo === "semana") {
+    filtroFechaInputContainer.innerHTML = '<input type="week" id="filtro-fecha-valor" class="controls">';
+  } else if (tipo === "mes") {
+    filtroFechaInputContainer.innerHTML = '<input type="month" id="filtro-fecha-valor" class="controls">';
+  } else {
+    filtroFechaInputContainer.innerHTML = '<input type="number" id="filtro-fecha-valor" class="controls" min="2000" max="2100" step="1">';
+  }
+  const input = document.getElementById("filtro-fecha-valor");
+  if (!input) return;
+  if (tipo === "dia") {
+    input.valueAsDate = hoy;
+  } else if (tipo === "semana") {
+    const primerEnero = new Date(hoy.getFullYear(), 0, 1);
+    const dias = Math.floor((hoy - primerEnero) / 86400000);
+    const semanaIso = Math.ceil((dias + primerEnero.getDay() + 1) / 7);
+    input.value = hoy.getFullYear() + "-W" + String(semanaIso).padStart(2, "0");
+  } else if (tipo === "mes") {
+    input.value = hoy.toISOString().slice(0, 7);
+  } else {
+    input.value = String(hoy.getFullYear());
+  }
+  input.addEventListener("change", renderTabla);
+}
+
+function obtenerMovimientosFiltrados() {
+  let lista = movimientosCache;
+  if (tipoFiltroTabla !== "todos") {
+    lista = lista.filter((m) => m.tipo === tipoFiltroTabla);
+  }
+  if (periodoFiltroTabla !== "todo") {
+    const inputValor = document.getElementById("filtro-fecha-valor");
+    const valor = inputValor ? inputValor.value : "";
+    const rango = calcularRangoFechas(periodoFiltroTabla, valor);
+    if (rango) {
+      lista = lista.filter((m) => m.fecha >= rango.inicio && m.fecha <= rango.fin);
+    }
+  }
+  return lista;
+}
+
+tabsFiltroTipo.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    tabsFiltroTipo.forEach((b) => b.classList.remove("activo"));
+    btn.classList.add("activo");
+    tipoFiltroTabla = btn.dataset.tipoFiltro;
+    renderTabla();
+  });
+});
+
+tabsFiltroFecha.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    tabsFiltroFecha.forEach((b) => b.classList.remove("activo"));
+    btn.classList.add("activo");
+    periodoFiltroTabla = btn.dataset.filtroPeriodo;
+    crearInputFiltroFecha(periodoFiltroTabla);
+    renderTabla();
   });
 });
 
@@ -1310,10 +1392,14 @@ function etiquetaTipo(tipo) {
 }
 
 function renderTabla() {
-  const ordenados = [...movimientosCache].sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+  const filtrados = obtenerMovimientosFiltrados();
+  const ordenados = [...filtrados].sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
 
   tablaCuerpo.innerHTML = "";
   tablaVacio.hidden = ordenados.length > 0;
+  tablaVacio.textContent = movimientosCache.length === 0
+    ? "Todavía no hay movimientos registrados."
+    : "No hay movimientos que coincidan con el filtro.";
 
   ordenados.forEach((mov) => {
     const tr = document.createElement("tr");
