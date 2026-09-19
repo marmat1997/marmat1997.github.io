@@ -254,7 +254,7 @@
     margin-bottom: 16px;
     flex-wrap: wrap;
 }
-.tab-tipo{
+.tab-tipo, .tab-filtro-tipo{
     background: none;
     border: 1px solid #464d7e;
     color: aliceblue;
@@ -263,7 +263,7 @@
     cursor: pointer;
     font-size: 14px;
 }
-.tab-tipo.activo{
+.tab-tipo.activo, .tab-filtro-tipo.activo{
     background: steelblue;
     border-color: steelblue;
 }
@@ -588,7 +588,7 @@
     margin-bottom: 16px;
     flex-wrap: wrap;
 }
-.tab-periodo{
+.tab-periodo, .tab-filtro-fecha{
     background: none;
     border: 1px solid #464d7e;
     color: aliceblue;
@@ -597,7 +597,7 @@
     cursor: pointer;
     font-size: 13px;
 }
-.tab-periodo.activo{
+.tab-periodo.activo, .tab-filtro-fecha.activo{
     background: steelblue;
     border-color: steelblue;
 }
@@ -643,6 +643,28 @@
     margin-bottom: 12px;
     flex-wrap: wrap;
     gap: 10px;
+}
+.tabla-filtros{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+.filtro-tipos, .filtro-fecha-tabs{
+    margin-bottom: 0;
+}
+.filtro-fecha{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.filtro-fecha-input-container{
+    min-width: 140px;
+    max-width: 200px;
+}
+.filtro-fecha-input-container .controls{
+    margin-bottom: 0;
 }
 .tabla-header h2{
     color: #fff;
