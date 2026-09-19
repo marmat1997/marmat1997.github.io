@@ -216,6 +216,25 @@
                 <h2 id="tabla-titulo">Movimientos</h2>
                 <button id="btn-exportar-excel" class="btn-exportar">&#128202; Exportar / Resumen</button>
             </div>
+            <div class="tabla-filtros">
+                <div class="tabs-tipo filtro-tipos">
+                    <button type="button" class="tab-filtro-tipo activo" data-tipo-filtro="todos">Todos</button>
+                    <button type="button" class="tab-filtro-tipo" data-tipo-filtro="ingreso">Ingresos</button>
+                    <button type="button" class="tab-filtro-tipo" data-tipo-filtro="gasto">Gastos</button>
+                    <button type="button" class="tab-filtro-tipo" data-tipo-filtro="prestamo">Préstamos</button>
+                    <button type="button" class="tab-filtro-tipo" data-tipo-filtro="transferencia">Transferencias</button>
+                </div>
+                <div class="filtro-fecha">
+                    <div class="tabs-periodo filtro-fecha-tabs">
+                        <button type="button" class="tab-filtro-fecha activo" data-filtro-periodo="todo">Todo</button>
+                        <button type="button" class="tab-filtro-fecha" data-filtro-periodo="dia">Día</button>
+                        <button type="button" class="tab-filtro-fecha" data-filtro-periodo="semana">Semana</button>
+                        <button type="button" class="tab-filtro-fecha" data-filtro-periodo="mes">Mes</button>
+                        <button type="button" class="tab-filtro-fecha" data-filtro-periodo="anio">Año</button>
+                    </div>
+                    <div id="filtro-fecha-input-container" class="filtro-fecha-input-container"></div>
+                </div>
+            </div>
             <div class="tabla-contenedor">
                 <table id="tabla-movimientos" class="tabla-movimientos">
                     <thead>
