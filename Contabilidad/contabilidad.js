@@ -469,7 +469,7 @@ function calcularSaldoCuenta(cuentaId) {
   let neto = 0;
   movimientosCache.forEach((m) => {
     if (m.tipo === "ingreso" && m.cuentaId === cuentaId) neto += Number(m.monto) || 0;
-    else if (m.tipo === "gasto" && m.cuentaId === cuentaId) neto -= Number(m.monto) || 0;
+    else if ((m.tipo === "gasto" || m.tipo === "prestamo") && m.cuentaId === cuentaId) neto -= Number(m.monto) || 0;
     else if (m.tipo === "transferencia") {
       if (m.cuentaOrigenId === cuentaId) neto -= Number(m.monto) || 0;
       if (m.cuentaDestinoId === cuentaId) neto += Number(m.monto) || 0;
@@ -519,9 +519,6 @@ function actualizarPanelesCuentaPorTipo() {
   if (tipoActivo === "transferencia") {
     panelSimple.hidden = true;
     panelTransferencia.hidden = false;
-  } else if (tipoActivo === "prestamo") {
-    panelSimple.hidden = true;
-    panelTransferencia.hidden = true;
   } else {
     panelSimple.hidden = false;
     panelTransferencia.hidden = true;
@@ -1413,7 +1410,7 @@ function renderTabla() {
     } else {
       const icono = mov.tipo === "prestamo" ? "🔄" : colorIconoParaTabla(mov);
       columnaCategoria = `${icono} ${escaparHtml(mov.categoria || etiquetaTipo(mov.tipo))}`;
-      columnaMonto = `${mov.tipo === "gasto" ? "-" : "+"}${formatoQ(mov.monto)}`;
+      columnaMonto = `${(mov.tipo === "gasto" || mov.tipo === "prestamo") ? "-" : "+"}${formatoQ(mov.monto)}`;
     }
 
     tr.innerHTML = `
@@ -1539,7 +1536,7 @@ function iniciarEdicionMovimiento(mov) {
     const selectDestino = document.getElementById("mov-cuenta-destino");
     if (selectOrigen && mov.cuentaOrigenId) selectOrigen.value = mov.cuentaOrigenId;
     if (selectDestino && mov.cuentaDestinoId) selectDestino.value = mov.cuentaDestinoId;
-  } else if (mov.tipo !== "prestamo") {
+  } else {
     const selectCuenta = document.getElementById("mov-cuenta");
     if (selectCuenta && mov.cuentaId) selectCuenta.value = mov.cuentaId;
   }
@@ -1579,14 +1576,11 @@ formMovimiento.addEventListener("submit", (e) => {
       alert("Elige una categoría para este movimiento.");
       return;
     }
-    let cuentaId = "";
-    if (tipoActivo !== "prestamo") {
-      const selectCuenta = document.getElementById("mov-cuenta");
-      cuentaId = selectCuenta ? selectCuenta.value : "";
-      if (!cuentaId) {
-        alert("Agrega al menos una cuenta antes de registrar este movimiento.");
-        return;
-      }
+    const selectCuenta = document.getElementById("mov-cuenta");
+    const cuentaId = selectCuenta ? selectCuenta.value : "";
+    if (!cuentaId) {
+      alert("Agrega al menos una cuenta antes de registrar este movimiento.");
+      return;
     }
     nuevo = {
       tipo: tipoActivo,
@@ -1594,8 +1588,8 @@ formMovimiento.addEventListener("submit", (e) => {
       monto: parseFloat(movMonto.value),
       fecha: movFecha.value,
       categoria: tipoActivo === "prestamo" ? "Préstamo" : categoriaSeleccionada,
+      cuentaId,
     };
-    if (cuentaId) nuevo.cuentaId = cuentaId;
   }
 
   if (!nuevo.concepto || isNaN(nuevo.monto) || !nuevo.fecha) return;
@@ -2037,7 +2031,7 @@ function generarResumenTexto(rango) {
         ? `${nombreCuenta(m.cuentaOrigenId)} → ${nombreCuenta(m.cuentaDestinoId)}`
         : (m.categoria || "");
       const cuentaTxt = m.tipo === "transferencia" ? "" : (m.cuentaId ? nombreCuenta(m.cuentaId) : "");
-      const signo = m.tipo === "gasto" ? "-" : m.tipo === "ingreso" ? "+" : "";
+      const signo = (m.tipo === "gasto" || m.tipo === "prestamo") ? "-" : m.tipo === "ingreso" ? "+" : "";
       lineas.push(`${m.fecha} | ${etiquetaTipo(m.tipo)} | ${categoriaTxt} | ${m.concepto} | ${cuentaTxt} | ${signo}${q(m.monto)}`);
     });
   }
