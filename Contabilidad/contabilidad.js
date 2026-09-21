@@ -447,6 +447,13 @@ function suscribirCuentas() {
         .sort((a, b) => (a.orden || 0) - (b.orden || 0));
       renderSelectoresCuenta();
       renderGridCuentas();
+      // Las cuentas y los movimientos se suscriben por separado y pueden
+      // llegar en cualquier orden: si los movimientos ya se pintaron antes
+      // de que llegaran las cuentas, la columna Cuenta (y el origen/destino
+      // de las transferencias) se quedaba mostrando "(cuenta eliminada)"
+      // aunque la cuenta sí existiera. Volver a pintar la tabla aquí
+      // corrige ese caso en cuanto llegan las cuentas.
+      if (typeof renderTabla === "function") renderTabla();
     },
     (error) => {
       console.error("Error leyendo cuentas:", error);
