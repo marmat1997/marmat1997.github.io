@@ -706,10 +706,11 @@
     padding: 10px 8px;
     border-bottom: 1px solid rgba(70,77,126,0.4);
 }
-.tabla-movimientos tr.fila-ingreso td:nth-child(4){ color: #7ED957; }
-.tabla-movimientos tr.fila-gasto td:nth-child(4){ color: #ff9d6e; }
-.tabla-movimientos tr.fila-prestamo td:nth-child(4){ color: #f69229; }
-.tabla-movimientos tr.fila-transferencia td:nth-child(4){ color: #4aa8ff; }
+.tabla-movimientos tr.fila-ingreso td:nth-child(5){ color: #7ED957; }
+.tabla-movimientos tr.fila-gasto td:nth-child(5){ color: #ff9d6e; }
+.tabla-movimientos tr.fila-prestamo td:nth-child(5){ color: #f69229; }
+.tabla-movimientos tr.fila-transferencia td:nth-child(5){ color: #4aa8ff; }
+.tabla-movimientos td.columna-cuenta{ color: var(--colorTextos); font-size: 13px; }
 .tabla-acciones{
     display: flex;
     gap: 6px;
