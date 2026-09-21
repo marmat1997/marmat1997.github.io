@@ -1403,13 +1403,16 @@ function renderTabla() {
     tr.className = "fila-" + mov.tipo;
 
     let columnaCategoria;
+    let columnaCuenta;
     let columnaMonto;
     if (mov.tipo === "transferencia") {
       columnaCategoria = `&#8646; ${escaparHtml(nombreCuenta(mov.cuentaOrigenId))} &rarr; ${escaparHtml(nombreCuenta(mov.cuentaDestinoId))}`;
+      columnaCuenta = "—";
       columnaMonto = `&#8646; ${formatoQ(mov.monto)}`;
     } else {
       const icono = mov.tipo === "prestamo" ? "🔄" : colorIconoParaTabla(mov);
       columnaCategoria = `${icono} ${escaparHtml(mov.categoria || etiquetaTipo(mov.tipo))}`;
+      columnaCuenta = mov.cuentaId ? escaparHtml(nombreCuenta(mov.cuentaId)) : "—";
       columnaMonto = `${(mov.tipo === "gasto" || mov.tipo === "prestamo") ? "-" : "+"}${formatoQ(mov.monto)}`;
     }
 
@@ -1417,6 +1420,7 @@ function renderTabla() {
       <td>${mov.fecha}</td>
       <td>${escaparHtml(mov.concepto)}</td>
       <td>${columnaCategoria}</td>
+      <td class="columna-cuenta">${columnaCuenta}</td>
       <td>${columnaMonto}</td>
       <td>
         <div class="tabla-acciones">
