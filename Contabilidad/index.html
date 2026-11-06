@@ -214,6 +214,10 @@
         <section class="panel-tabla">
             <div class="tabla-header">
                 <h2 id="tabla-titulo">Movimientos</h2>
+                <div class="tabs-vista-mov">
+                    <button type="button" class="tab-vista-mov activo" data-vista-mov="lista">&#128203; Lista</button>
+                    <button type="button" class="tab-vista-mov" data-vista-mov="calendario">&#128197; Calendario</button>
+                </div>
                 <button id="btn-exportar-excel" class="btn-exportar">&#128202; Exportar / Resumen</button>
             </div>
             <div class="tabla-filtros">
@@ -224,7 +228,7 @@
                     <button type="button" class="tab-filtro-tipo" data-tipo-filtro="prestamo">Préstamos</button>
                     <button type="button" class="tab-filtro-tipo" data-tipo-filtro="transferencia">Transferencias</button>
                 </div>
-                <div class="filtro-fecha">
+                <div class="filtro-fecha" id="fila-filtro-fecha">
                     <div class="tabs-periodo filtro-fecha-tabs">
                         <button type="button" class="tab-filtro-fecha activo" data-filtro-periodo="todo">Todo</button>
                         <button type="button" class="tab-filtro-fecha" data-filtro-periodo="dia">Día</button>
@@ -234,8 +238,14 @@
                     </div>
                     <div id="filtro-fecha-input-container" class="filtro-fecha-input-container"></div>
                 </div>
+                <div class="filtro-categoria-fila">
+                    <label for="filtro-categoria" class="filtro-categoria-label">Categoría:</label>
+                    <select id="filtro-categoria" class="controls filtro-categoria-select">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
             </div>
-            <div class="tabla-contenedor">
+            <div class="tabla-contenedor" id="movs-tabla-contenedor">
                 <table id="tabla-movimientos" class="tabla-movimientos">
                     <thead>
                         <tr>
@@ -250,6 +260,17 @@
                     <tbody id="tabla-cuerpo"></tbody>
                 </table>
                 <p id="tabla-vacio" class="tabla-vacio">Todavía no hay movimientos registrados.</p>
+            </div>
+            <div id="vista-calendario-mov" class="vista-calendario-mov" hidden>
+                <div class="calendario-nav">
+                    <button type="button" id="btn-mes-anterior" class="btn-calendario-nav" aria-label="Mes anterior">&larr;</button>
+                    <h3 id="calendario-titulo-mes">&nbsp;</h3>
+                    <button type="button" id="btn-mes-siguiente" class="btn-calendario-nav" aria-label="Mes siguiente">&rarr;</button>
+                </div>
+                <div class="calendario-dias-semana">
+                    <span>Dom</span><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span>
+                </div>
+                <div id="calendario-grid" class="calendario-grid"></div>
             </div>
         </section>
         </div>
@@ -291,6 +312,15 @@
                 </div>
                 <button type="button" id="btn-cancelar-exportar" class="btn-cancelar-chico btn-cancelar-ancho">Cancelar</button>
                 <p id="resumen-copiado-msg" class="resumen-copiado-msg" hidden>&#10003; Copiado &mdash; pégalo donde quieras analizarlo con una IA.</p>
+            </div>
+        </div>
+
+        <div id="panel-dia-movs" class="panel-exportar-overlay" hidden>
+            <div class="panel-exportar-caja panel-dia-caja">
+                <h3 id="dia-movs-titulo">&nbsp;</h3>
+                <p id="dia-movs-neto" class="dia-movs-neto"></p>
+                <div id="dia-movs-lista" class="dia-movs-lista"></div>
+                <button type="button" id="btn-cerrar-dia-movs" class="btn-cancelar-chico btn-cancelar-ancho">Cerrar</button>
             </div>
         </div>
     </div>
