@@ -311,6 +311,7 @@ function suscribirCategorias() {
       categoriasPersonalizadas = nuevas;
       renderGridCategorias();
       renderGraficaCategorias();
+      poblarFiltroCategoria();
     },
     (error) => {
       console.error("Error leyendo categorías:", error);
@@ -1342,11 +1343,19 @@ function crearInputFiltroFecha(tipo) {
   input.addEventListener("change", renderTabla);
 }
 
-function obtenerMovimientosFiltrados() {
+function obtenerMovimientosPorTipoYCategoria() {
   let lista = movimientosCache;
   if (tipoFiltroTabla !== "todos") {
     lista = lista.filter((m) => m.tipo === tipoFiltroTabla);
   }
+  if (categoriaFiltroTabla) {
+    lista = lista.filter((m) => m.categoria === categoriaFiltroTabla);
+  }
+  return lista;
+}
+
+function obtenerMovimientosFiltrados() {
+  let lista = obtenerMovimientosPorTipoYCategoria();
   if (periodoFiltroTabla !== "todo") {
     const inputValor = document.getElementById("filtro-fecha-valor");
     const valor = inputValor ? inputValor.value : "";
@@ -1363,7 +1372,9 @@ tabsFiltroTipo.forEach((btn) => {
     tabsFiltroTipo.forEach((b) => b.classList.remove("activo"));
     btn.classList.add("activo");
     tipoFiltroTabla = btn.dataset.tipoFiltro;
+    poblarFiltroCategoria();
     renderTabla();
+    renderCalendario();
   });
 });
 
@@ -1376,6 +1387,249 @@ tabsFiltroFecha.forEach((btn) => {
     renderTabla();
   });
 });
+
+// ============================================================
+// Filtro de categoría para la tabla y el calendario de
+// movimientos. Las opciones dependen del tipo activo (todos /
+// ingresos / gastos / etc.), porque cada tipo tiene su propio
+// catálogo de categorías.
+// ============================================================
+
+const selectFiltroCategoria = document.getElementById("filtro-categoria");
+let categoriaFiltroTabla = "";
+
+function categoriasParaFiltro() {
+  if (tipoFiltroTabla === "ingreso") return obtenerCategorias("ingreso");
+  if (tipoFiltroTabla === "gasto") return obtenerCategorias("gasto");
+  if (tipoFiltroTabla === "prestamo") return [{ id: "Préstamo", icono: "🔄" }];
+  if (tipoFiltroTabla === "transferencia") return [];
+  const vistas = new Map();
+  [...obtenerCategorias("gasto"), ...obtenerCategorias("ingreso")].forEach((c) => {
+    if (!vistas.has(c.id)) vistas.set(c.id, c);
+  });
+  return [...vistas.values()];
+}
+
+function poblarFiltroCategoria() {
+  if (!selectFiltroCategoria) return;
+  const categorias = categoriasParaFiltro();
+  const valorPrevio = categoriaFiltroTabla;
+  selectFiltroCategoria.innerHTML = '<option value="">Todas</option>';
+  categorias.forEach((cat) => {
+    const opt = document.createElement("option");
+    opt.value = cat.id;
+    opt.textContent = `${cat.icono} ${cat.id}`;
+    selectFiltroCategoria.appendChild(opt);
+  });
+  selectFiltroCategoria.disabled = categorias.length === 0;
+  // Si la categoría elegida ya no aplica a este tipo, la reseteamos a "Todas".
+  const sigueExistiendo = categorias.some((c) => c.id === valorPrevio);
+  categoriaFiltroTabla = sigueExistiendo ? valorPrevio : "";
+  selectFiltroCategoria.value = categoriaFiltroTabla;
+}
+
+if (selectFiltroCategoria) {
+  selectFiltroCategoria.addEventListener("change", () => {
+    categoriaFiltroTabla = selectFiltroCategoria.value;
+    renderTabla();
+    renderCalendario();
+  });
+}
+
+poblarFiltroCategoria();
+
+// ============================================================
+// Vista Lista / Calendario de la tabla de movimientos. El
+// calendario reutiliza los filtros de tipo y categoría de arriba;
+// en vez del filtro de periodo (día/semana/mes/año) usa su propia
+// navegación mes a mes.
+// ============================================================
+
+const tabsVistaMov = document.querySelectorAll(".tab-vista-mov");
+const movsTablaContenedor = document.getElementById("movs-tabla-contenedor");
+const filaFiltroFecha = document.getElementById("fila-filtro-fecha");
+const vistaCalendarioMov = document.getElementById("vista-calendario-mov");
+let vistaMovActiva = "lista";
+
+function actualizarVistaMovimientos() {
+  const esCalendario = vistaMovActiva === "calendario";
+  if (movsTablaContenedor) movsTablaContenedor.hidden = esCalendario;
+  if (filaFiltroFecha) filaFiltroFecha.hidden = esCalendario;
+  if (vistaCalendarioMov) vistaCalendarioMov.hidden = !esCalendario;
+  if (esCalendario) renderCalendario();
+}
+
+tabsVistaMov.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    tabsVistaMov.forEach((b) => b.classList.remove("activo"));
+    btn.classList.add("activo");
+    vistaMovActiva = btn.dataset.vistaMov;
+    actualizarVistaMovimientos();
+  });
+});
+
+let calendarioFechaVista = new Date();
+
+function cambiarMesCalendario(delta) {
+  calendarioFechaVista = new Date(calendarioFechaVista.getFullYear(), calendarioFechaVista.getMonth() + delta, 1);
+  renderCalendario();
+}
+
+const btnMesAnterior = document.getElementById("btn-mes-anterior");
+const btnMesSiguiente = document.getElementById("btn-mes-siguiente");
+if (btnMesAnterior) btnMesAnterior.addEventListener("click", () => cambiarMesCalendario(-1));
+if (btnMesSiguiente) btnMesSiguiente.addEventListener("click", () => cambiarMesCalendario(1));
+
+function calcularNetoMovimiento(mov) {
+  if (mov.tipo === "ingreso") return Number(mov.monto) || 0;
+  if (mov.tipo === "gasto" || mov.tipo === "prestamo") return -(Number(mov.monto) || 0);
+  return 0; // una transferencia no cambia el patrimonio total, solo mueve dinero entre tus propias cuentas
+}
+
+function renderCalendario() {
+  const grid = document.getElementById("calendario-grid");
+  const tituloMes = document.getElementById("calendario-titulo-mes");
+  if (!grid || !tituloMes) return;
+
+  const anio = calendarioFechaVista.getFullYear();
+  const mes = calendarioFechaVista.getMonth(); // 0-11
+  tituloMes.textContent = `${NOMBRES_MES[mes]} ${anio}`;
+
+  const movsBase = obtenerMovimientosPorTipoYCategoria();
+  const movsPorDia = new Map();
+  movsBase.forEach((m) => {
+    if (!m.fecha) return;
+    const partes = m.fecha.split("-");
+    const a = parseInt(partes[0], 10);
+    const me = parseInt(partes[1], 10);
+    if (a !== anio || me !== mes + 1) return;
+    if (!movsPorDia.has(m.fecha)) movsPorDia.set(m.fecha, []);
+    movsPorDia.get(m.fecha).push(m);
+  });
+
+  const primerDiaSemana = new Date(anio, mes, 1).getDay(); // 0 = domingo
+  const diasEnMes = new Date(anio, mes + 1, 0).getDate();
+  const hoyIso = fechaLocalISO();
+
+  grid.innerHTML = "";
+
+  for (let i = 0; i < primerDiaSemana; i++) {
+    const vacia = document.createElement("div");
+    vacia.className = "calendario-celda vacia";
+    grid.appendChild(vacia);
+  }
+
+  for (let dia = 1; dia <= diasEnMes; dia++) {
+    const fechaIso = `${anio}-${String(mes + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+    const movsDia = movsPorDia.get(fechaIso) || [];
+    const celda = document.createElement("div");
+    celda.className = "calendario-celda";
+    if (fechaIso === hoyIso) celda.classList.add("hoy");
+
+    const numero = document.createElement("div");
+    numero.className = "calendario-celda-numero";
+    numero.textContent = String(dia);
+    celda.appendChild(numero);
+
+    if (movsDia.length) {
+      celda.classList.add("con-movs");
+
+      const coloresDelDia = new Map();
+      movsDia.forEach((m) => {
+        const clave = m.tipo === "transferencia" ? "transferencia" : (m.categoria || m.tipo);
+        if (coloresDelDia.has(clave)) return;
+        const color = m.tipo === "transferencia"
+          ? "#4aa8ff"
+          : colorParaCategoria(m.tipo === "ingreso" ? "ingreso" : "gasto", m.categoria || etiquetaTipo(m.tipo));
+        coloresDelDia.set(clave, color);
+      });
+
+      const puntos = document.createElement("div");
+      puntos.className = "calendario-celda-puntos";
+      [...coloresDelDia.values()].slice(0, 6).forEach((color) => {
+        const punto = document.createElement("span");
+        punto.className = "calendario-punto";
+        punto.style.setProperty("--punto-color", color);
+        puntos.appendChild(punto);
+      });
+      celda.appendChild(puntos);
+
+      const neto = movsDia.reduce((acc, m) => acc + calcularNetoMovimiento(m), 0);
+      const montoEl = document.createElement("div");
+      montoEl.className = "calendario-celda-monto " + (neto > 0 ? "positivo" : neto < 0 ? "negativo" : "neutro");
+      montoEl.textContent = (neto > 0 ? "+" : neto < 0 ? "-" : "") + formatoQ(Math.abs(neto));
+      celda.appendChild(montoEl);
+
+      celda.addEventListener("click", () => abrirPopupDia(fechaIso, movsDia));
+    }
+
+    grid.appendChild(celda);
+  }
+}
+
+// ============================================================
+// Popup con el detalle de movimientos de un día del calendario.
+// ============================================================
+
+const panelDiaMovs = document.getElementById("panel-dia-movs");
+const diaMovsTitulo = document.getElementById("dia-movs-titulo");
+const diaMovsNeto = document.getElementById("dia-movs-neto");
+const diaMovsLista = document.getElementById("dia-movs-lista");
+const btnCerrarDiaMovs = document.getElementById("btn-cerrar-dia-movs");
+
+function abrirPopupDia(fechaIso, movsDia) {
+  if (!panelDiaMovs) return;
+  const partes = fechaIso.split("-");
+  const anio = parseInt(partes[0], 10);
+  const mes = parseInt(partes[1], 10);
+  const dia = parseInt(partes[2], 10);
+  const fechaObj = new Date(anio, mes - 1, dia);
+  diaMovsTitulo.textContent = `${NOMBRES_DIA_SEMANA[fechaObj.getDay()]} ${dia} de ${NOMBRES_MES[mes - 1].toLowerCase()}, ${anio}`;
+
+  const neto = movsDia.reduce((acc, m) => acc + calcularNetoMovimiento(m), 0);
+  diaMovsNeto.textContent = `Neto del día: ${neto >= 0 ? "+" : "-"}${formatoQ(Math.abs(neto))}`;
+  diaMovsNeto.className = "dia-movs-neto " + (neto > 0 ? "positivo" : neto < 0 ? "negativo" : "");
+
+  diaMovsLista.innerHTML = "";
+  [...movsDia]
+    .sort((a, b) => (a.concepto || "").localeCompare(b.concepto || ""))
+    .forEach((mov) => {
+      const item = document.createElement("div");
+      item.className = "dia-mov-item";
+      let colorBorde = "#4aa8ff";
+      let categoriaTexto;
+      let montoTexto;
+      let claseMonto = "";
+      if (mov.tipo === "transferencia") {
+        categoriaTexto = `${nombreCuenta(mov.cuentaOrigenId)} → ${nombreCuenta(mov.cuentaDestinoId)}`;
+        montoTexto = formatoQ(mov.monto);
+      } else {
+        colorBorde = colorParaCategoria(mov.tipo === "ingreso" ? "ingreso" : "gasto", mov.categoria || etiquetaTipo(mov.tipo));
+        const icono = mov.tipo === "prestamo" ? "🔄" : colorIconoParaTabla(mov);
+        categoriaTexto = `${icono} ${mov.categoria || etiquetaTipo(mov.tipo)}`;
+        montoTexto = `${(mov.tipo === "gasto" || mov.tipo === "prestamo") ? "-" : "+"}${formatoQ(mov.monto)}`;
+        claseMonto = (mov.tipo === "gasto" || mov.tipo === "prestamo") ? "negativo" : "positivo";
+      }
+      item.style.setProperty("--cat-color", colorBorde);
+      item.innerHTML = `
+        <div class="dia-mov-info">
+          <span class="dia-mov-concepto">${escaparHtml(mov.concepto)}</span>
+          <span class="dia-mov-categoria">${escaparHtml(categoriaTexto)}</span>
+        </div>
+        <span class="dia-mov-monto ${claseMonto}">${montoTexto}</span>
+      `;
+      diaMovsLista.appendChild(item);
+    });
+
+  panelDiaMovs.hidden = false;
+}
+
+if (btnCerrarDiaMovs) {
+  btnCerrarDiaMovs.addEventListener("click", () => {
+    panelDiaMovs.hidden = true;
+  });
+}
+
 
 function suscribirMovimientos() {
   if (unsubscribeMovs) return; // ya suscrito
@@ -1512,6 +1766,7 @@ function renderTodo() {
   renderGraficas();
   renderProyeccion();
   renderGridCuentas();
+  renderCalendario();
 }
 
 // ============================================================
@@ -1657,6 +1912,8 @@ formMovimiento.addEventListener("submit", (e) => {
 // ============================================================
 
 const NOMBRES_MES_CORTOS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+const NOMBRES_MES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+const NOMBRES_DIA_SEMANA = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 let chartHistorial = null;
 let chartCategorias = null;
 let periodoGraficaCategorias = "mes"; // "mes" | "todo"
