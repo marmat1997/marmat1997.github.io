@@ -1247,6 +1247,25 @@ async function importarDatosPrecisosSiHaceFalta() {
 // App de movimientos (ingresos / gastos / préstamos)
 // ============================================================
 
+// Fecha/mes de "hoy" usando la hora LOCAL (no UTC). new Date().toISOString()
+// siempre convierte a UTC, y Guatemala está en UTC-6: cualquier hora después
+// de las 6:00 p.m. local ya cae en el día (o mes, a fin de mes) siguiente en
+// UTC, lo que adelantaba las fechas por defecto. Estas dos funciones arman
+// el string "YYYY-MM-DD" / "YYYY-MM" a partir de los componentes locales del
+// Date, para que "hoy" sea siempre el día real del usuario.
+function fechaLocalISO(d = new Date()) {
+  const anio = d.getFullYear();
+  const mes = String(d.getMonth() + 1).padStart(2, "0");
+  const dia = String(d.getDate()).padStart(2, "0");
+  return `${anio}-${mes}-${dia}`;
+}
+
+function mesLocalISO(d = new Date()) {
+  const anio = d.getFullYear();
+  const mes = String(d.getMonth() + 1).padStart(2, "0");
+  return `${anio}-${mes}`;
+}
+
 const tabsTipo = document.querySelectorAll(".tab-tipo");
 const formMovimiento = document.getElementById("form-movimiento");
 const movConcepto = document.getElementById("mov-concepto");
@@ -1268,7 +1287,7 @@ let tipoFiltroTabla = "todos";
 let periodoFiltroTabla = "todo";
 
 // fecha de hoy por defecto
-movFecha.valueAsDate = new Date();
+movFecha.value = fechaLocalISO();
 
 tabsTipo.forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -1309,14 +1328,14 @@ function crearInputFiltroFecha(tipo) {
   const input = document.getElementById("filtro-fecha-valor");
   if (!input) return;
   if (tipo === "dia") {
-    input.valueAsDate = hoy;
+    input.value = fechaLocalISO(hoy);
   } else if (tipo === "semana") {
     const primerEnero = new Date(hoy.getFullYear(), 0, 1);
     const dias = Math.floor((hoy - primerEnero) / 86400000);
     const semanaIso = Math.ceil((dias + primerEnero.getDay() + 1) / 7);
     input.value = hoy.getFullYear() + "-W" + String(semanaIso).padStart(2, "0");
   } else if (tipo === "mes") {
-    input.value = hoy.toISOString().slice(0, 7);
+    input.value = mesLocalISO(hoy);
   } else {
     input.value = String(hoy.getFullYear());
   }
@@ -1381,7 +1400,7 @@ function desuscribirMovimientos() {
   if (editandoMovId) {
     editandoMovId = null;
     formMovimiento.reset();
-    movFecha.valueAsDate = new Date();
+    movFecha.value = fechaLocalISO();
     actualizarModoFormulario();
   }
 }
@@ -1517,7 +1536,7 @@ function actualizarModoFormulario() {
 function cancelarEdicionMovimiento() {
   editandoMovId = null;
   formMovimiento.reset();
-  movFecha.valueAsDate = new Date();
+  movFecha.value = fechaLocalISO();
   categoriaSeleccionada = tipoActivo === "prestamo" ? "Préstamo" : "";
   renderGridCategorias();
   actualizarModoFormulario();
@@ -1619,7 +1638,7 @@ formMovimiento.addEventListener("submit", (e) => {
     .then(() => {
       editandoMovId = null;
       formMovimiento.reset();
-      movFecha.valueAsDate = new Date();
+      movFecha.value = fechaLocalISO();
       categoriaSeleccionada = tipoActivo === "prestamo" ? "Préstamo" : "";
       renderGridCategorias();
       actualizarModoFormulario();
@@ -1694,7 +1713,7 @@ function renderGraficaHistorial() {
 function renderGraficaCategorias() {
   const canvas = document.getElementById("chart-categorias");
   if (!canvas || typeof Chart === "undefined") return;
-  const mesActualClave = new Date().toISOString().slice(0, 7);
+  const mesActualClave = mesLocalISO();
   const gastos = movimientosCache.filter((m) => {
     if (m.tipo !== "gasto") return false;
     if (periodoGraficaCategorias === "mes") return (m.fecha || "").slice(0, 7) === mesActualClave;
@@ -1774,7 +1793,7 @@ function renderProyeccion() {
   const mesActualIdx = hoy.getMonth(); // 0-11
   const diaActual = hoy.getDate();
   const diasEnMes = new Date(anioActual, mesActualIdx + 1, 0).getDate();
-  const mesActualClave = hoy.toISOString().slice(0, 7);
+  const mesActualClave = mesLocalISO(hoy);
 
   // 1. Gasto proyectado del mes actual
   const gastoMesActual = movimientosCache
@@ -1833,14 +1852,14 @@ function crearInputPeriodo(tipo) {
   const input = document.getElementById("export-valor");
   if (!input) return;
   if (tipo === "dia") {
-    input.valueAsDate = hoy;
+    input.value = fechaLocalISO(hoy);
   } else if (tipo === "semana") {
     const primerEnero = new Date(hoy.getFullYear(), 0, 1);
     const dias = Math.floor((hoy - primerEnero) / 86400000);
     const semanaIso = Math.ceil((dias + primerEnero.getDay() + 1) / 7);
     input.value = hoy.getFullYear() + "-W" + String(semanaIso).padStart(2, "0");
   } else if (tipo === "mes") {
-    input.value = hoy.toISOString().slice(0, 7);
+    input.value = mesLocalISO(hoy);
   } else {
     input.value = String(hoy.getFullYear());
   }
@@ -1992,7 +2011,7 @@ function generarResumenTexto(rango) {
 
   lineas.push("=== Resumen financiero de Marvin Matias ===");
   lineas.push(`Periodo: ${rango.etiqueta} (${rango.inicio} a ${rango.fin})`);
-  lineas.push(`Generado: ${new Date().toISOString().slice(0, 10)}`);
+  lineas.push(`Generado: ${fechaLocalISO()}`);
   lineas.push("Montos en quetzales guatemaltecos (Q).");
   lineas.push("");
 
