@@ -254,7 +254,7 @@
     margin-bottom: 16px;
     flex-wrap: wrap;
 }
-.tab-tipo, .tab-filtro-tipo{
+.tab-tipo, .tab-filtro-tipo, .tab-vista-mov{
     background: none;
     border: 1px solid #464d7e;
     color: aliceblue;
@@ -263,7 +263,7 @@
     cursor: pointer;
     font-size: 14px;
 }
-.tab-tipo.activo, .tab-filtro-tipo.activo{
+.tab-tipo.activo, .tab-filtro-tipo.activo, .tab-vista-mov.activo{
     background: steelblue;
     border-color: steelblue;
 }
@@ -736,6 +736,180 @@
     padding: 20px 0;
 }
 
+/* ---------- Filtro de categoría (tabla y calendario) ---------- */
+.filtro-categoria-fila{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.filtro-categoria-label{
+    color: var(--colorTextos);
+    font-size: 13px;
+}
+.filtro-categoria-select{
+    min-width: 170px;
+    max-width: 220px;
+}
+
+/* ---------- Calendario de movimientos ---------- */
+.vista-calendario-mov{
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+    padding: 20px;
+}
+.calendario-nav{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+.calendario-nav h3{
+    color: #fff;
+    font-size: 17px;
+    min-width: 170px;
+    text-align: center;
+    text-transform: capitalize;
+}
+.btn-calendario-nav{
+    background: none;
+    border: 1px solid #464d7e;
+    color: aliceblue;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+}
+.btn-calendario-nav:hover{
+    background: rgba(255,255,255,0.08);
+}
+.calendario-dias-semana{
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    margin-bottom: 6px;
+}
+.calendario-dias-semana span{
+    color: var(--colorTextos);
+    font-size: 11px;
+    text-transform: uppercase;
+    text-align: center;
+}
+.calendario-grid{
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+}
+.calendario-celda{
+    aspect-ratio: 1 / 1;
+    border-radius: 10px;
+    border: 1px solid #464d7e;
+    background: rgba(255,255,255,0.03);
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    position: relative;
+    min-width: 0;
+}
+.calendario-celda.vacia{
+    border-color: transparent;
+    background: none;
+}
+.calendario-celda.hoy{
+    border-color: #4aa8ff;
+    box-shadow: 0 0 0 1px #4aa8ff inset;
+}
+.calendario-celda.con-movs{
+    cursor: pointer;
+}
+.calendario-celda.con-movs:hover{
+    background: rgba(255,255,255,0.08);
+}
+.calendario-celda-numero{
+    color: aliceblue;
+    font-size: 12px;
+    font-weight: 600;
+}
+.calendario-celda-puntos{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-top: 4px;
+}
+.calendario-punto{
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--punto-color, #784e91);
+}
+.calendario-celda-monto{
+    margin-top: auto;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.calendario-celda-monto.positivo{ color: #7ED957; }
+.calendario-celda-monto.negativo{ color: #ff9d6e; }
+.calendario-celda-monto.neutro{ color: var(--colorTextos); }
+
+/* ---------- Popup de movimientos de un día ---------- */
+.panel-dia-caja{
+    max-width: 420px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+.dia-movs-neto{
+    color: var(--colorTextos);
+    font-size: 13px;
+    margin-bottom: 14px;
+}
+.dia-movs-neto.positivo{ color: #7ED957; }
+.dia-movs-neto.negativo{ color: #ff9d6e; }
+.dia-movs-lista{
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+.dia-mov-item{
+    --cat-color: #784e91;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 8px;
+    padding: 8px 10px;
+    border-left: 3px solid var(--cat-color);
+}
+.dia-mov-info{
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.dia-mov-concepto{
+    color: aliceblue;
+    font-size: 13px;
+}
+.dia-mov-categoria{
+    color: var(--colorTextos);
+    font-size: 11px;
+}
+.dia-mov-monto{
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.dia-mov-monto.positivo{ color: #7ED957; }
+.dia-mov-monto.negativo{ color: #ff9d6e; }
+
 /* ---------- Responsivo ---------- */
 @media (max-width: 900px){
     .resumen-tarjetas{
@@ -776,6 +950,13 @@
     }
     .proyeccion-tarjetas{
         grid-template-columns: repeat(2, 1fr);
+    }
+    .calendario-celda-monto{
+        font-size: 9px;
+    }
+    .calendario-nav h3{
+        font-size: 15px;
+        min-width: 140px;
     }
 }
 
