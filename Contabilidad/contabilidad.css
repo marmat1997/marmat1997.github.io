@@ -756,14 +756,16 @@
 .vista-calendario-mov{
     background: rgba(255,255,255,0.04);
     border-radius: 12px;
-    padding: 20px;
+    padding: 14px;
+    max-width: 640px;
+    margin: 0 auto;
 }
 .calendario-nav{
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 16px;
-    margin-bottom: 14px;
+    margin-bottom: 10px;
 }
 .calendario-nav h3{
     color: #fff;
@@ -789,8 +791,8 @@
 .calendario-dias-semana{
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 6px;
-    margin-bottom: 6px;
+    gap: 3px;
+    margin-bottom: 4px;
 }
 .calendario-dias-semana span{
     color: var(--colorTextos);
@@ -801,18 +803,19 @@
 .calendario-grid{
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 6px;
+    gap: 3px;
 }
 .calendario-celda{
-    aspect-ratio: 1 / 1;
-    border-radius: 10px;
+    border-radius: 7px;
     border: 1px solid #464d7e;
     background: rgba(255,255,255,0.03);
     display: flex;
     flex-direction: column;
-    padding: 6px;
+    gap: 2px;
+    padding: 3px 4px;
     position: relative;
     min-width: 0;
+    min-height: 44px;
 }
 .calendario-celda.vacia{
     border-color: transparent;
@@ -830,7 +833,7 @@
 }
 .calendario-celda-numero{
     color: aliceblue;
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 600;
 }
 .calendario-celda-puntos{
@@ -845,9 +848,43 @@
     border-radius: 50%;
     background: var(--punto-color, #784e91);
 }
+.calendario-celda-categorias{
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+}
+.calendario-cat-linea{
+    display: flex;
+    justify-content: space-between;
+    gap: 4px;
+    border-left: 2px solid var(--cat-color, #784e91);
+    padding-left: 3px;
+    font-size: 9px;
+    line-height: 1.25;
+    overflow: hidden;
+}
+.calendario-cat-nombre{
+    color: aliceblue;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.calendario-cat-monto{
+    white-space: nowrap;
+    font-weight: 600;
+}
+.calendario-cat-monto.positivo{ color: #7ED957; }
+.calendario-cat-monto.negativo{ color: #ff9d6e; }
+.calendario-cat-monto.neutro{ color: var(--colorTextos); }
+.calendario-cat-mas{
+    color: var(--colorTextos);
+    font-size: 8px;
+    padding-left: 5px;
+}
 .calendario-celda-monto{
     margin-top: auto;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 600;
     line-height: 1.1;
     overflow: hidden;
@@ -857,6 +894,23 @@
 .calendario-celda-monto.positivo{ color: #7ED957; }
 .calendario-celda-monto.negativo{ color: #ff9d6e; }
 .calendario-celda-monto.neutro{ color: var(--colorTextos); }
+
+.calendario-resumen-mes{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #464d7e;
+    font-size: 13px;
+    color: var(--colorTextos);
+}
+.calendario-resumen-mes .calendario-resumen-monto{
+    font-weight: 600;
+    font-size: 15px;
+}
+.calendario-resumen-monto.positivo{ color: #7ED957; }
+.calendario-resumen-monto.negativo{ color: #ff9d6e; }
 
 /* ---------- Popup de movimientos de un día ---------- */
 .panel-dia-caja{
