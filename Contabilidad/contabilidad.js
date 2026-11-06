@@ -1497,6 +1497,7 @@ function renderCalendario() {
 
   const movsBase = obtenerMovimientosPorTipoYCategoria();
   const movsPorDia = new Map();
+  let totalMes = 0;
   movsBase.forEach((m) => {
     if (!m.fecha) return;
     const partes = m.fecha.split("-");
@@ -1505,6 +1506,7 @@ function renderCalendario() {
     if (a !== anio || me !== mes + 1) return;
     if (!movsPorDia.has(m.fecha)) movsPorDia.set(m.fecha, []);
     movsPorDia.get(m.fecha).push(m);
+    totalMes += calcularNetoMovimiento(m);
   });
 
   const primerDiaSemana = new Date(anio, mes, 1).getDay(); // 0 = domingo
@@ -1534,25 +1536,43 @@ function renderCalendario() {
     if (movsDia.length) {
       celda.classList.add("con-movs");
 
-      const coloresDelDia = new Map();
+      const gruposDelDia = new Map();
       movsDia.forEach((m) => {
         const clave = m.tipo === "transferencia" ? "transferencia" : (m.categoria || m.tipo);
-        if (coloresDelDia.has(clave)) return;
-        const color = m.tipo === "transferencia"
-          ? "#4aa8ff"
-          : colorParaCategoria(m.tipo === "ingreso" ? "ingreso" : "gasto", m.categoria || etiquetaTipo(m.tipo));
-        coloresDelDia.set(clave, color);
+        if (!gruposDelDia.has(clave)) {
+          const esTransferencia = m.tipo === "transferencia";
+          const color = esTransferencia
+            ? "#4aa8ff"
+            : colorParaCategoria(m.tipo === "ingreso" ? "ingreso" : "gasto", m.categoria || etiquetaTipo(m.tipo));
+          const nombre = esTransferencia ? "Transferencia" : (m.categoria || etiquetaTipo(m.tipo));
+          gruposDelDia.set(clave, { color, nombre, total: 0, esTransferencia });
+        }
+        const grupo = gruposDelDia.get(clave);
+        grupo.total += grupo.esTransferencia ? (Number(m.monto) || 0) : calcularNetoMovimiento(m);
       });
 
-      const puntos = document.createElement("div");
-      puntos.className = "calendario-celda-puntos";
-      [...coloresDelDia.values()].slice(0, 6).forEach((color) => {
-        const punto = document.createElement("span");
-        punto.className = "calendario-punto";
-        punto.style.setProperty("--punto-color", color);
-        puntos.appendChild(punto);
+      const categoriasEl = document.createElement("div");
+      categoriasEl.className = "calendario-celda-categorias";
+      const gruposOrdenados = [...gruposDelDia.values()];
+      gruposOrdenados.slice(0, 3).forEach((grupo) => {
+        const linea = document.createElement("div");
+        linea.className = "calendario-cat-linea";
+        linea.style.setProperty("--cat-color", grupo.color);
+        const claseMonto = grupo.esTransferencia ? "neutro" : (grupo.total > 0 ? "positivo" : grupo.total < 0 ? "negativo" : "neutro");
+        const signo = grupo.esTransferencia ? "" : (grupo.total > 0 ? "+" : grupo.total < 0 ? "-" : "");
+        linea.innerHTML = `
+          <span class="calendario-cat-nombre">${escaparHtml(grupo.nombre)}</span>
+          <span class="calendario-cat-monto ${claseMonto}">${signo}${formatoQ(Math.abs(grupo.total))}</span>
+        `;
+        categoriasEl.appendChild(linea);
       });
-      celda.appendChild(puntos);
+      if (gruposOrdenados.length > 3) {
+        const mas = document.createElement("div");
+        mas.className = "calendario-cat-mas";
+        mas.textContent = `+${gruposOrdenados.length - 3} más`;
+        categoriasEl.appendChild(mas);
+      }
+      celda.appendChild(categoriasEl);
 
       const neto = movsDia.reduce((acc, m) => acc + calcularNetoMovimiento(m), 0);
       const montoEl = document.createElement("div");
@@ -1564,6 +1584,15 @@ function renderCalendario() {
     }
 
     grid.appendChild(celda);
+  }
+
+  const resumenMes = document.getElementById("calendario-resumen-mes");
+  if (resumenMes) {
+    const claseTotal = totalMes > 0 ? "positivo" : totalMes < 0 ? "negativo" : "";
+    resumenMes.innerHTML = `
+      <span>Total del mes</span>
+      <span class="calendario-resumen-monto ${claseTotal}">${totalMes >= 0 ? "+" : "-"}${formatoQ(Math.abs(totalMes))}</span>
+    `;
   }
 }
 
